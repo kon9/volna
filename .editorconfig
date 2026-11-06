@@ -1,0 +1,25 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{cs,axaml,csproj,props}]
+indent_style = space
+indent_size = 4
+
+[*.axaml]
+indent_size = 2
+
+[*.{json,yml,yaml,md,sh}]
+indent_style = space
+indent_size = 2
+
+[tests/**.cs]
+# Test names read as sentences, and test data is clearer written in place.
+dotnet_diagnostic.CA1001.severity = none
+dotnet_diagnostic.CA1051.severity = none
+dotnet_diagnostic.CA1707.severity = none
+dotnet_diagnostic.CA1861.severity = none

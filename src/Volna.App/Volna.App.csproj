@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>Volna</AssemblyName>
+    <RootNamespace>Volna.App</RootNamespace>
+    <ApplicationIcon>..\..\assets\generated\icon.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\lucide.ttf" />
+    <AvaloniaResource Include="..\..\assets\generated\icon-256.png" Link="Assets\icon-256.png" />
+    <PackageReference Include="Avalonia" Version="12.1.5" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.1.5" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.5" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.5" />
+    <ProjectReference Include="..\Volna.Core\Volna.Core.csproj" />
+  </ItemGroup>
+</Project>

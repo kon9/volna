@@ -1,0 +1,10 @@
+{
+  "globs": ["**/*.md"],
+  "ignores": ["**/bin/**", "**/obj/**", "dist/**", "src/**/Assets/**"],
+  "config": {
+    // Prose wraps by itself, and the README centers its header with HTML.
+    "MD013": false,
+    "MD033": false,
+    "MD041": false
+  }
+}

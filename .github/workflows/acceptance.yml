@@ -1,0 +1,33 @@
+name: Acceptance
+
+# Real downloads on every system, before a release and once a week, because the sites change without notice.
+# Cloud machines are sometimes refused by YouTube; the log then says so.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "23 5 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  acceptance:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Real downloads, checked
+        shell: bash
+        run: bash tools/acceptance.sh "${{ runner.temp }}/acceptance"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acceptance-${{ matrix.os }}
+          path: ${{ runner.temp }}/acceptance/acceptance.log

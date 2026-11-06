@@ -1,0 +1,793 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:l="using:Volna.App"
+        xmlns:core="using:Volna.Core"
+        xmlns:chrome="using:Avalonia.Controls.Chrome"
+        x:Class="Volna.App.MainWindow"
+        Title="Volna" Width="1240" Height="820" MinWidth="880" MinHeight="540"
+        WindowStartupLocation="CenterScreen" Background="{DynamicResource Bg}"
+        Icon="avares://Volna/Assets/icon-256.png">
+  <Grid Name="Root">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+
+    <!-- Ambient glow -->
+    <Border Grid.RowSpan="4" IsHitTestVisible="False">
+      <Border.Background>
+        <RadialGradientBrush Center="8%,0%" GradientOrigin="8%,0%" RadiusX="55%" RadiusY="70%">
+          <GradientStop Color="#1EFF3D68" Offset="0"/>
+          <GradientStop Color="#00FF3D68" Offset="1"/>
+        </RadialGradientBrush>
+      </Border.Background>
+    </Border>
+
+    <!-- Title bar: the window's own controls sit in the free space Margin leaves for them -->
+    <Grid Name="TitleBar" Margin="20,10,20,8" Background="Transparent" ColumnDefinitions="Auto,*,Auto" chrome:WindowDecorationProperties.ElementRole="TitleBar">
+      <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="10" IsHitTestVisible="False">
+        <Image Source="avares://Volna/Assets/icon-256.png" Width="28" Height="28"/>
+        <TextBlock Text="Volna" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"/>
+      </StackPanel>
+      <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Spacing="8" chrome:WindowDecorationProperties.ElementRole="User">
+        <Button Name="NewVersionButton" Classes="chip" Tag="openRelease" IsVisible="False">
+          <TextBlock Name="NewVersionText" Foreground="{DynamicResource Good}" VerticalAlignment="Center"/>
+        </Button>
+        <Button Name="AccountButton" Tag="account" Height="34">
+          <Button.ContextMenu>
+            <ContextMenu Name="AccountMenu">
+              <MenuItem Header="{l:Tr auth.title}" Tag="signin"/>
+              <MenuItem Header="{l:Tr auth.signout}" Tag="signout"/>
+            </ContextMenu>
+          </Button.ContextMenu>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Panel VerticalAlignment="Center">
+              <TextBlock Classes="icon" Text="&#xe19f;" FontSize="14"/>
+              <Ellipse Name="AccountDot" Width="7" Height="7" Fill="{DynamicResource Good}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-3,-2" IsVisible="False"/>
+            </Panel>
+            <TextBlock Name="AccountText" VerticalAlignment="Center" FontSize="13"/>
+          </StackPanel>
+        </Button>
+        <Button Tag="settings" Height="34">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Classes="icon" Text="&#xe154;" FontSize="14"/>
+            <TextBlock Text="{l:Tr settings.open}" VerticalAlignment="Center" FontSize="13"/>
+          </StackPanel>
+        </Button>
+      </StackPanel>
+    </Grid>
+
+    <!-- Input -->
+    <StackPanel Grid.Row="1" Margin="20,2,20,14">
+      <Border Name="InputCard" CornerRadius="16" BorderThickness="1" Padding="16,6,6,6" Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Line}">
+        <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+          <TextBlock Classes="icon muted" Text="&#xe102;" FontSize="16" Margin="0,0,10,0"/>
+          <TextBox Name="InputBox" Grid.Column="1" Classes="bare" AcceptsReturn="True" TextWrapping="Wrap" MaxHeight="140" MinHeight="38"
+                   PlaceholderText="{l:Tr input.hint}"/>
+          <Button Grid.Column="2" Tag="import" Margin="8,0,0,0" ToolTip.Tip="{l:Tr import.tip}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Classes="icon" Text="&#xe0d7;" FontSize="14"/>
+              <TextBlock Text="{l:Tr import.button}" VerticalAlignment="Center"/>
+            </StackPanel>
+          </Button>
+          <Button Grid.Column="3" Tag="paste" Margin="8,0" ToolTip.Tip="{l:Tr input.paste.tip}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Classes="icon" Text="&#xe3e8;" FontSize="14"/>
+              <TextBlock Text="{l:Tr input.paste}" VerticalAlignment="Center"/>
+            </StackPanel>
+          </Button>
+          <Button Grid.Column="4" Classes="primary" Tag="add">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Classes="icon" Text="&#xe13d;" FontSize="14"/>
+              <TextBlock Text="{l:Tr input.add}" VerticalAlignment="Center"/>
+            </StackPanel>
+          </Button>
+        </Grid>
+      </Border>
+      <TextBlock Classes="hint" Margin="6,8,0,0" Text="{l:Tr input.help}"/>
+    </StackPanel>
+
+    <!-- Main -->
+    <Grid Grid.Row="2" Margin="20,0" ColumnDefinitions="*,18,340">
+      <Grid RowDefinitions="Auto,Auto,*">
+        <Grid Margin="2,0,8,8" ColumnDefinitions="Auto,*,Auto">
+          <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="10">
+            <TextBlock Text="{l:Tr queue.title}" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"/>
+            <Border Background="{DynamicResource Surface2}" CornerRadius="9" Padding="8,1" VerticalAlignment="Center">
+              <TextBlock Name="QueueCount" Text="0" FontSize="12" FontWeight="SemiBold"/>
+            </Border>
+          </StackPanel>
+          <StackPanel Name="QueueActions" Grid.Column="2" Orientation="Horizontal">
+            <Button Classes="ghost" Tag="allVideo" ToolTip.Tip="{l:Tr queue.allvideo}">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <TextBlock Classes="icon" Text="&#xe1a5;" FontSize="13"/>
+                <TextBlock Classes="label" Text="{l:Tr queue.allvideo}" VerticalAlignment="Center"/>
+              </StackPanel>
+            </Button>
+            <Button Classes="ghost" Tag="allAudio" ToolTip.Tip="{l:Tr queue.allaudio}">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <TextBlock Classes="icon" Text="&#xe122;" FontSize="13"/>
+                <TextBlock Classes="label" Text="{l:Tr queue.allaudio}" VerticalAlignment="Center"/>
+              </StackPanel>
+            </Button>
+            <Button Classes="ghost" Name="RetryFailedButton" Tag="retryFailed" IsVisible="False" ToolTip.Tip="{l:Tr queue.retryfailed}">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <TextBlock Classes="icon" Text="&#xe148;" FontSize="13"/>
+                <TextBlock Classes="label" Text="{l:Tr queue.retryfailed}" VerticalAlignment="Center"/>
+              </StackPanel>
+            </Button>
+            <Button Classes="ghost" Name="CopyFailedButton" Tag="copyFailed" IsVisible="False" ToolTip.Tip="{l:Tr queue.copyfailed}">
+              <TextBlock Classes="icon" Text="&#xe09e;" FontSize="13"/>
+            </Button>
+            <Button Classes="ghost" Tag="clearDone" ToolTip.Tip="{l:Tr queue.cleardone}">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <TextBlock Classes="icon" Text="&#xe06c;" FontSize="13"/>
+                <TextBlock Classes="label" Text="{l:Tr queue.cleardone}" VerticalAlignment="Center"/>
+              </StackPanel>
+            </Button>
+            <Button Classes="ghost" Tag="clearAll" ToolTip.Tip="{l:Tr queue.clear}">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <TextBlock Classes="icon" Text="&#xe18e;" FontSize="13"/>
+                <TextBlock Classes="label" Text="{l:Tr queue.clear}" VerticalAlignment="Center"/>
+              </StackPanel>
+            </Button>
+          </StackPanel>
+        </Grid>
+
+        <!-- Filters: worth having once a list runs into the thousands -->
+        <Grid Name="FilterRow" Grid.Row="1" Margin="2,0,8,10" ColumnDefinitions="Auto,12,*" RowDefinitions="Auto,Auto" IsVisible="False">
+          <Border Background="{DynamicResource Well}" CornerRadius="11" Padding="3">
+            <StackPanel Orientation="Horizontal">
+              <RadioButton Name="FilterAll" Classes="segment" GroupName="QueueFilter" Padding="12,5" IsChecked="True">
+                <TextBlock Name="FilterAllText" FontSize="12.5"/>
+              </RadioButton>
+              <RadioButton Name="FilterWaiting" Classes="segment" GroupName="QueueFilter" Padding="12,5">
+                <TextBlock Name="FilterWaitingText" FontSize="12.5"/>
+              </RadioButton>
+              <RadioButton Name="FilterActive" Classes="segment" GroupName="QueueFilter" Padding="12,5">
+                <TextBlock Name="FilterActiveText" FontSize="12.5"/>
+              </RadioButton>
+              <RadioButton Name="FilterDone" Classes="segment" GroupName="QueueFilter" Padding="12,5">
+                <TextBlock Name="FilterDoneText" FontSize="12.5"/>
+              </RadioButton>
+              <RadioButton Name="FilterFailed" Classes="segment" GroupName="QueueFilter" Padding="12,5">
+                <TextBlock Name="FilterFailedText" FontSize="12.5"/>
+              </RadioButton>
+              <RadioButton Name="FilterCheck" Classes="segment" GroupName="QueueFilter" Padding="12,5" IsVisible="False" ToolTip.Tip="{l:Tr filter.check.tip}">
+                <TextBlock Name="FilterCheckText" FontSize="12.5" Foreground="{DynamicResource Warn}"/>
+              </RadioButton>
+            </StackPanel>
+          </Border>
+          <TextBox Name="FilterBox" Grid.Column="2" MinHeight="34" Height="34" PlaceholderText="{l:Tr queue.filter}"/>
+        </Grid>
+
+        <ListBox Name="QueueList" Grid.Row="2" Background="Transparent" BorderThickness="0" Padding="0" SelectionMode="Multiple"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="core:QueueItem">
+              <Border Classes="card">
+                <Border.ContextMenu>
+                  <ContextMenu>
+                    <MenuItem Header="{l:Tr menu.versions}" Tag="pickVersion"/>
+                    <MenuItem Header="{l:Tr menu.accept}" Tag="acceptMatch" IsVisible="{Binding ShowReview}"/>
+                    <MenuItem Header="{l:Tr menu.clip}" Tag="clip" IsEnabled="{Binding CanEdit}"/>
+                    <MenuItem Header="{l:Tr menu.follow}" Tag="follow" IsVisible="{Binding CanFollow}"/>
+                    <MenuItem Header="{l:Tr menu.expand}" Tag="expandPlaylist" IsVisible="{Binding CanExpandPlaylist}"/>
+                    <MenuItem Header="{l:Tr menu.again}" Tag="downloadAgain" IsVisible="{Binding CanDownloadAgain}"/>
+                    <MenuItem Header="{l:Tr menu.browser}" Tag="browser"/>
+                    <MenuItem Header="{l:Tr menu.copylink}" Tag="copyLink"/>
+                    <MenuItem Header="{l:Tr menu.copylog}" Tag="copyItemLog"/>
+                    <MenuItem Header="{l:Tr menu.remove}" Tag="remove"/>
+                  </ContextMenu>
+                </Border.ContextMenu>
+                <Grid ColumnDefinitions="184,*,Auto">
+                  <Border Width="184" Height="104" CornerRadius="10" ClipToBounds="True" VerticalAlignment="Top" Background="{DynamicResource Surface2}">
+                    <Panel>
+                      <TextBlock Classes="icon" Text="{Binding PlaceholderGlyph}" FontSize="26" Foreground="{DynamicResource Dim}" HorizontalAlignment="Center" IsVisible="{Binding NoThumb}"/>
+                      <Image Source="{Binding ThumbBytes, Converter={x:Static l:Converters.Thumb}}" Stretch="UniformToFill"/>
+                      <Border Background="#99000000" IsVisible="{Binding IsDone}">
+                        <Border Width="40" Height="40" CornerRadius="20" Background="#22C55E" HorizontalAlignment="Center" VerticalAlignment="Center">
+                          <TextBlock Classes="icon" Text="&#xe06c;" FontSize="20" Foreground="White" HorizontalAlignment="Center"/>
+                        </Border>
+                      </Border>
+                      <Border Background="#D9000000" CornerRadius="6" Padding="6,2" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="6" IsVisible="{Binding HasDuration}">
+                        <TextBlock Text="{Binding Duration}" FontSize="11.5" FontWeight="SemiBold" Foreground="White"/>
+                      </Border>
+                    </Panel>
+                  </Border>
+
+                  <Grid Grid.Column="1" Margin="16,1,8,0" RowDefinitions="Auto,Auto,Auto,*,Auto,Auto">
+                    <TextBlock Text="{Binding Title}" ToolTip.Tip="{Binding Title}" FontSize="15" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Grid.Row="1" Text="{Binding Meta}" Classes="muted" FontSize="12.5" Margin="0,3,0,0" TextTrimming="CharacterEllipsis" IsVisible="{Binding HasMeta}"/>
+                    <WrapPanel Grid.Row="2" Margin="0,8,0,0">
+                      <Button Classes="chip" Tag="modeMenu" IsEnabled="{Binding CanEdit}" ToolTip.Tip="{l:Tr card.mode.tip}">
+                        <Button.ContextMenu>
+                          <ContextMenu>
+                            <MenuItem Header="{l:Tr settings.audio}" Tag="modeAudio"/>
+                            <Separator/>
+                            <MenuItem Header="{l:Tr settings.quality.max}" Tag="quality:0"/>
+                            <MenuItem Header="{l:Tr settings.quality.2160}" Tag="quality:2160"/>
+                            <MenuItem Header="{l:Tr settings.quality.1440}" Tag="quality:1440"/>
+                            <MenuItem Header="{l:Tr settings.quality.1080}" Tag="quality:1080"/>
+                            <MenuItem Header="{l:Tr settings.quality.720}" Tag="quality:720"/>
+                            <MenuItem Header="{l:Tr settings.quality.480}" Tag="quality:480"/>
+                            <MenuItem Header="{l:Tr settings.quality.360}" Tag="quality:360"/>
+                          </ContextMenu>
+                        </Button.ContextMenu>
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                          <TextBlock Classes="icon" Text="{Binding ModeGlyph}" FontSize="12"/>
+                          <TextBlock Text="{Binding ModeText}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                      </Button>
+                      <Button Classes="chip" Tag="pickVersion" IsVisible="{Binding ShowReview}" ToolTip.Tip="{Binding ReviewText}" Background="{DynamicResource WarnBg}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                          <TextBlock Classes="icon" Text="&#xe24a;" FontSize="12" Foreground="{DynamicResource Warn}"/>
+                          <TextBlock Text="{l:Tr card.review}" Foreground="{DynamicResource Warn}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                      </Button>
+                      <Border Classes="pill" IsVisible="{Binding HasSection}">
+                        <TextBlock Text="{Binding SectionText}" Classes="muted"/>
+                      </Border>
+                      <Border Classes="pill" Background="{DynamicResource WarnBg}" IsVisible="{Binding ShowHistory}">
+                        <TextBlock Text="{l:Tr card.history}" Foreground="{DynamicResource Warn}"/>
+                      </Border>
+                      <Border Classes="pill" Background="{DynamicResource GoodBg}" IsVisible="{Binding IsOriginal}" ToolTip.Tip="{l:Tr card.original.tip}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                          <TextBlock Classes="icon" Text="&#xe122;" FontSize="11" Foreground="{DynamicResource Good}"/>
+                          <TextBlock Text="{l:Tr card.original}" Foreground="{DynamicResource Good}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                      </Border>
+                      <Button Classes="chip" Tag="pickVersion" IsVisible="{Binding ShowAlternatives}" ToolTip.Tip="{l:Tr card.versions.tip}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                          <TextBlock Classes="icon" Text="&#xe24a;" FontSize="12"/>
+                          <TextBlock Text="{Binding AlternativesText}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                      </Button>
+                      <Border Classes="pill" Background="{DynamicResource WarnBg}" IsVisible="{Binding ShowExists}" ToolTip.Tip="{Binding ExistingPathText}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                          <TextBlock Classes="icon" Text="&#xe0d7;" FontSize="11" Foreground="{DynamicResource Warn}"/>
+                          <TextBlock Text="{l:Tr card.exists}" Foreground="{DynamicResource Warn}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                      </Border>
+                      <Border Classes="pill" IsVisible="{Binding HasBadge}">
+                        <TextBlock Text="{Binding Badge}" FontWeight="SemiBold" Classes="muted"/>
+                      </Border>
+                      <Border Classes="pill" IsVisible="{Binding HasPlaylist}" ToolTip.Tip="{Binding Playlist}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                          <TextBlock Classes="icon muted" Text="{Binding PlaylistGlyph}" FontSize="11"/>
+                          <TextBlock Text="{Binding Playlist}" Classes="muted" MaxWidth="280" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                        </StackPanel>
+                      </Border>
+                    </WrapPanel>
+                    <Grid Grid.Row="4" Margin="0,6,0,7" ColumnDefinitions="Auto,*,Auto">
+                      <TextBlock Classes="icon status" Classes.downloading="{Binding IsDownloading}" Classes.processing="{Binding IsProcessing}" Classes.done="{Binding IsDone}" Classes.failed="{Binding IsFailed}" Classes.stopped="{Binding IsStopped}"
+                                 Text="{Binding StatusGlyph}" FontSize="13" Margin="0,0,8,0"/>
+                      <TextBlock Grid.Column="1" Classes="status" Classes.downloading="{Binding IsDownloading}" Classes.processing="{Binding IsProcessing}" Classes.done="{Binding IsDone}" Classes.failed="{Binding IsFailed}" Classes.stopped="{Binding IsStopped}"
+                                 Text="{Binding StatusText}" ToolTip.Tip="{Binding StatusText}" FontSize="12.5" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                      <TextBlock Grid.Column="2" Text="{Binding SpeedText}" Classes="muted" FontSize="12" VerticalAlignment="Center" Margin="12,0,0,0" IsVisible="{Binding HasSpeed}"/>
+                    </Grid>
+                    <ProgressBar Grid.Row="5" Value="{Binding Progress}" Maximum="100" IsIndeterminate="{Binding IsBusyIndicator}" IsVisible="{Binding ShowProgress}"
+                                 Classes.processing="{Binding IsProcessing}" Classes.lookup="{Binding IsLookingUp}"/>
+                  </Grid>
+
+                  <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                    <Button Classes="icon" Tag="cardMenu" ToolTip.Tip="{l:Tr card.menu}" Content="&#xe0b6;"/>
+                    <Button Classes="icon" Tag="open" ToolTip.Tip="{l:Tr card.open}" IsVisible="{Binding IsDone}" Content="&#xe13c;"/>
+                    <Button Classes="icon" Tag="reveal" ToolTip.Tip="{l:Tr card.reveal}" IsVisible="{Binding IsDone}" Content="&#xe247;"/>
+                    <Button Classes="icon" Tag="startOne" ToolTip.Tip="{l:Tr card.startone}" IsVisible="{Binding ShowStartOne}" Content="&#xe0b2;"/>
+                    <Button Classes="icon" Tag="retry" ToolTip.Tip="{l:Tr card.retry}" IsVisible="{Binding ShowRetry}" Content="&#xe148;"/>
+                    <Button Classes="icon danger" Tag="cancel" ToolTip.Tip="{l:Tr card.cancel}" IsVisible="{Binding ShowCancel}" Content="&#xe1b2;"/>
+                    <Button Classes="icon danger" Tag="remove" ToolTip.Tip="{l:Tr card.remove}" IsVisible="{Binding ShowRemove}" Content="&#xe18e;"/>
+                  </StackPanel>
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+
+        <TextBlock Name="NoMatch" Grid.Row="2" Text="{l:Tr queue.nomatch}" Classes="muted" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="False"/>
+
+        <StackPanel Name="EmptyState" Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,40">
+          <Image Source="avares://Volna/Assets/icon-256.png" Width="88" Height="88" HorizontalAlignment="Center"/>
+          <TextBlock Text="{l:Tr empty.title}" FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,18,0,6"/>
+          <TextBlock Text="{l:Tr empty.line1}" Classes="muted" HorizontalAlignment="Center"/>
+          <TextBlock Text="{l:Tr empty.line2}" Classes="muted" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+          <Button Tag="import" HorizontalAlignment="Center" Margin="0,16,0,0" ToolTip.Tip="{l:Tr import.tip}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Classes="icon" Text="&#xe0d7;" FontSize="14"/>
+              <TextBlock Text="{l:Tr empty.import}" VerticalAlignment="Center"/>
+            </StackPanel>
+          </Button>
+          <WrapPanel HorizontalAlignment="Center" Margin="0,18,0,0">
+            <Border Classes="pill" Padding="10,5"><TextBlock Text="{l:Tr empty.pill1}" Classes="muted"/></Border>
+            <Border Classes="pill" Padding="10,5"><TextBlock Text="{l:Tr empty.pill2}" Classes="muted"/></Border>
+            <Border Classes="pill" Padding="10,5"><TextBlock Text="{l:Tr empty.pill3}" Classes="muted"/></Border>
+            <Border Classes="pill" Padding="10,5"><TextBlock Text="{l:Tr empty.pill4}" Classes="muted"/></Border>
+          </WrapPanel>
+        </StackPanel>
+      </Grid>
+
+      <!-- Settings -->
+      <Border Grid.Column="2" Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="18">
+        <DockPanel>
+          <Grid DockPanel.Dock="Bottom" Margin="16,12,16,16" ColumnDefinitions="*,Auto">
+            <Button Name="StartButton" Classes="primary" Tag="start" Height="48" FontSize="15" HorizontalAlignment="Stretch">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <TextBlock Classes="icon" Text="&#xe0b2;" FontSize="16"/>
+                <TextBlock Name="StartText" VerticalAlignment="Center"/>
+              </StackPanel>
+            </Button>
+            <Button Name="StopButton" Grid.Column="1" Tag="stop" Height="48" Margin="10,0,0,0" ToolTip.Tip="{l:Tr settings.stop.tip}" IsVisible="False">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Classes="icon" Text="&#xe167;" FontSize="13" Foreground="{DynamicResource Bad}"/>
+                <TextBlock Text="{l:Tr settings.stop}" VerticalAlignment="Center"/>
+              </StackPanel>
+            </Button>
+          </Grid>
+          <ScrollViewer HorizontalScrollBarVisibility="Disabled" Padding="16,0,16,8">
+            <StackPanel>
+              <TextBlock Text="{l:Tr settings.format}" Classes="section" Margin="0,16,0,10"/>
+              <Border Background="{DynamicResource Well}" CornerRadius="12" Padding="4">
+                <UniformGrid Columns="2">
+                  <RadioButton Name="ModeVideo" Classes="segment" GroupName="Mode" HorizontalAlignment="Stretch">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <TextBlock Classes="icon" Text="&#xe1a5;" FontSize="14"/>
+                      <TextBlock Text="{l:Tr settings.video}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    </StackPanel>
+                  </RadioButton>
+                  <RadioButton Name="ModeAudio" Classes="segment" GroupName="Mode" HorizontalAlignment="Stretch">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <TextBlock Classes="icon" Text="&#xe122;" FontSize="14"/>
+                      <TextBlock Text="{l:Tr settings.audio}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    </StackPanel>
+                  </RadioButton>
+                </UniformGrid>
+              </Border>
+
+              <StackPanel Name="VideoOptions" Margin="0,14,0,0">
+              <Grid ColumnDefinitions="*,10,92">
+                <StackPanel>
+                  <TextBlock Text="{l:Tr settings.quality}" Classes="field"/>
+                  <ComboBox Name="QualityBox">
+                    <ComboBoxItem Content="{l:Tr settings.quality.max}"/>
+                    <ComboBoxItem Content="{l:Tr settings.quality.2160}"/>
+                    <ComboBoxItem Content="{l:Tr settings.quality.1440}"/>
+                    <ComboBoxItem Content="{l:Tr settings.quality.1080}"/>
+                    <ComboBoxItem Content="{l:Tr settings.quality.720}"/>
+                    <ComboBoxItem Content="{l:Tr settings.quality.480}"/>
+                    <ComboBoxItem Content="{l:Tr settings.quality.360}"/>
+                  </ComboBox>
+                </StackPanel>
+                <StackPanel Grid.Column="2">
+                  <TextBlock Text="{l:Tr settings.container}" Classes="field"/>
+                  <ComboBox Name="ContainerBox">
+                    <ComboBoxItem Content="MP4"/>
+                    <ComboBoxItem Content="MKV"/>
+                  </ComboBox>
+                </StackPanel>
+              </Grid>
+                <Grid ColumnDefinitions="*,Auto" Margin="0,12,0,0">
+                  <StackPanel VerticalAlignment="Center"><TextBlock Text="{l:Tr settings.subs}"/><TextBlock Text="{l:Tr settings.subs.hint}" Classes="hint"/></StackPanel>
+                  <ToggleSwitch Name="SubsBox" Grid.Column="1" OnContent="" OffContent="" MinWidth="0" Padding="0"/>
+                </Grid>
+              </StackPanel>
+              <StackPanel Name="AudioOptions" Margin="0,14,0,0">
+                <TextBlock Text="{l:Tr settings.audioformat}" Classes="field"/>
+                <ComboBox Name="AudioFormatBox">
+                  <ComboBoxItem Content="{l:Tr settings.audio.mp3}"/>
+                  <ComboBoxItem Content="{l:Tr settings.audio.m4a}"/>
+                  <ComboBoxItem Content="{l:Tr settings.audio.best}"/>
+                </ComboBox>
+                <Grid ColumnDefinitions="*,Auto" Margin="0,12,0,0" ToolTip.Tip="{l:Tr settings.original.tip}">
+                  <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="{l:Tr settings.original}"/>
+                    <TextBlock Text="{l:Tr settings.original.hint}" Classes="hint"/>
+                  </StackPanel>
+                  <ToggleSwitch Name="OriginalBox" Grid.Column="1" OnContent="" OffContent="" MinWidth="0" Padding="0"/>
+                </Grid>
+                <Grid ColumnDefinitions="*,Auto" Margin="0,10,0,0">
+                  <StackPanel VerticalAlignment="Center"><TextBlock Text="{l:Tr settings.lyrics}"/><TextBlock Text="{l:Tr settings.lyrics.hint}" Classes="hint"/></StackPanel>
+                  <ToggleSwitch Name="LyricsBox" Grid.Column="1" OnContent="" OffContent="" MinWidth="0" Padding="0"/>
+                </Grid>
+              </StackPanel>
+
+              <TextBlock Text="{l:Tr settings.folder}" Classes="section"/>
+              <Grid ColumnDefinitions="*,Auto,Auto">
+                <TextBox Name="FolderBox" PlaceholderText="{l:Tr settings.folder.hint}" TextWrapping="NoWrap"/>
+                <Button Grid.Column="1" Tag="browse" Width="38" Padding="0" Margin="6,0,0,0" ToolTip.Tip="{l:Tr settings.browse}">
+                  <TextBlock Classes="icon" Text="&#xe0d7;" FontSize="15"/>
+                </Button>
+                <Button Grid.Column="2" Tag="openFolder" Width="38" Padding="0" Margin="6,0,0,0" ToolTip.Tip="{l:Tr settings.openfolder}">
+                  <TextBlock Classes="icon" Text="&#xe0b9;" FontSize="15"/>
+                </Button>
+              </Grid>
+
+            </StackPanel>
+          </ScrollViewer>
+        </DockPanel>
+      </Border>
+    </Grid>
+
+    <!-- Status bar -->
+    <Grid Grid.Row="3" Margin="22,12,22,14" ColumnDefinitions="300,*,Auto">
+      <StackPanel VerticalAlignment="Center">
+        <TextBlock Name="StatusText" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+        <TextBlock Name="StatusDetail" Classes="muted" FontSize="12" TextTrimming="CharacterEllipsis" Margin="0,1,0,0"/>
+      </StackPanel>
+      <ProgressBar Name="OverallBar" Grid.Column="1" Margin="16,0,20,0" VerticalAlignment="Center" Maximum="100"/>
+      <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+        <TextBlock Name="SpeedText" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,16,0"/>
+        <TextBlock Name="VersionText" Foreground="{DynamicResource Dim}" FontSize="12" VerticalAlignment="Center"/>
+      </StackPanel>
+    </Grid>
+
+    <!-- Log drawer -->
+    <Border Name="LogPanel" Grid.Row="2" Grid.RowSpan="2" VerticalAlignment="Bottom" Height="300" Margin="20,0,20,14" Classes="dialog" IsVisible="False">
+      <DockPanel Margin="16,10,10,12">
+        <Grid DockPanel.Dock="Top" Margin="0,0,0,8">
+          <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
+            <TextBlock Classes="icon muted" Text="&#xe181;" FontSize="14"/>
+            <TextBlock Text="{l:Tr log.title}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Classes="ghost" Tag="openLogs" Content="{l:Tr log.folder}"/>
+            <Button Classes="ghost" Tag="copyLog" Content="{l:Tr log.copy}"/>
+            <Button Classes="icon" Tag="toggleLog" Width="32" Height="32" FontSize="14" Content="&#xe1b2;" ToolTip.Tip="{l:Tr log.close}"/>
+          </StackPanel>
+        </Grid>
+        <TextBox Name="LogBox" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" Background="Transparent" BorderThickness="0" FontFamily="Cascadia Mono, Consolas, Menlo, DejaVu Sans Mono, monospace" FontSize="12"
+                 VerticalContentAlignment="Top" ScrollViewer.VerticalScrollBarVisibility="Auto" Foreground="{DynamicResource Muted}"/>
+      </DockPanel>
+    </Border>
+
+    <!-- Toast -->
+    <Border Name="Toast" Grid.RowSpan="4" Classes="dialog" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,74" CornerRadius="12" Padding="16,11" Opacity="0" IsHitTestVisible="False">
+      <StackPanel Orientation="Horizontal" Spacing="10">
+        <TextBlock Name="ToastGlyph" Classes="icon" FontSize="16"/>
+        <TextBlock Name="ToastText" VerticalAlignment="Center" MaxWidth="640" TextWrapping="Wrap"/>
+      </StackPanel>
+    </Border>
+
+    <!-- Version picker -->
+    <Grid Name="PickerOverlay" Grid.RowSpan="4" IsVisible="False">
+      <Border Background="{DynamicResource Scrim}"/>
+      <Border Classes="dialog" Width="800" MaxHeight="680" Margin="40" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="22,20,16,16">
+        <DockPanel>
+          <Grid DockPanel.Dock="Top" Margin="0,0,6,0">
+            <StackPanel>
+              <TextBlock Text="{l:Tr picker.title}" FontSize="19" FontWeight="SemiBold"/>
+              <TextBlock Text="{l:Tr picker.detail}" Classes="hint" Margin="0,4,40,0"/>
+            </StackPanel>
+            <Button Classes="icon" Tag="pickerClose" HorizontalAlignment="Right" VerticalAlignment="Top" Content="&#xe1b2;" ToolTip.Tip="{l:Tr picker.close}"/>
+          </Grid>
+          <Grid DockPanel.Dock="Top" Margin="0,14,6,10" ColumnDefinitions="*,Auto">
+            <TextBox Name="PickerQuery" PlaceholderText="{l:Tr picker.query}"/>
+            <Button Grid.Column="1" Classes="primary" Tag="pickerSearch" Margin="8,0,0,0">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Classes="icon" Text="&#xe151;" FontSize="14"/>
+                <TextBlock Text="{l:Tr picker.search}" VerticalAlignment="Center"/>
+              </StackPanel>
+            </Button>
+          </Grid>
+          <Border DockPanel.Dock="Top" Background="{DynamicResource Well}" CornerRadius="11" Padding="3" HorizontalAlignment="Left" Margin="0,0,0,10">
+            <StackPanel Orientation="Horizontal">
+              <RadioButton Name="PickerMusic" Classes="segment" GroupName="PickerSource" Padding="12,6">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <TextBlock Classes="icon" Text="&#xe122;" FontSize="13"/>
+                  <TextBlock Text="{l:Tr picker.tracks}" VerticalAlignment="Center"/>
+                </StackPanel>
+              </RadioButton>
+              <RadioButton Name="PickerVideos" Classes="segment" GroupName="PickerSource" Padding="12,6">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <TextBlock Classes="icon" Text="&#xe1a5;" FontSize="13"/>
+                  <TextBlock Text="{l:Tr picker.videos}" VerticalAlignment="Center"/>
+                </StackPanel>
+              </RadioButton>
+            </StackPanel>
+          </Border>
+          <TextBlock Name="PickerStatus" DockPanel.Dock="Top" Classes="hint" Margin="2,0,0,8"/>
+          <ListBox Name="PickerList" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="core:QueueItem">
+                <Button Tag="pick" Height="NaN" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="8" Margin="0,0,6,4">
+                  <Grid ColumnDefinitions="160,*,Auto">
+                    <Border Width="160" Height="90" CornerRadius="8" ClipToBounds="True" Background="{DynamicResource Surface2}">
+                      <Panel>
+                        <Image Source="{Binding ThumbBytes, Converter={x:Static l:Converters.Thumb}}" Stretch="UniformToFill"/>
+                        <Border Background="#D9000000" CornerRadius="5" Padding="5,1" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="5" IsVisible="{Binding HasDuration}">
+                          <TextBlock Text="{Binding Duration}" FontSize="11" FontWeight="SemiBold" Foreground="White"/>
+                        </Border>
+                      </Panel>
+                    </Border>
+                    <StackPanel Grid.Column="1" Margin="14,2,10,0" VerticalAlignment="Center">
+                      <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap" MaxHeight="40" TextTrimming="CharacterEllipsis"/>
+                      <TextBlock Text="{Binding Meta}" Classes="muted" FontSize="12.5" Margin="0,5,0,0" TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                      <Border Classes="pill" IsVisible="{Binding IsOriginal}">
+                        <TextBlock Text="{l:Tr picker.original}" Foreground="{DynamicResource Good}"/>
+                      </Border>
+                      <Border Classes="pill" Background="{DynamicResource GoodBg}" IsVisible="{Binding Chosen}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                          <TextBlock Classes="icon" Text="&#xe06c;" FontSize="11" Foreground="{DynamicResource Good}"/>
+                          <TextBlock Text="{l:Tr picker.chosen}" Foreground="{DynamicResource Good}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                      </Border>
+                    </StackPanel>
+                  </Grid>
+                </Button>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </DockPanel>
+      </Border>
+    </Grid>
+
+    <!-- Sign-in -->
+    <Grid Name="AuthOverlay" Grid.RowSpan="4" IsVisible="False">
+      <Border Background="{DynamicResource Scrim}"/>
+      <Border Classes="dialog" Width="580" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="28,24">
+        <StackPanel>
+          <Grid>
+            <Border Width="48" Height="48" CornerRadius="14" Background="{StaticResource AccentGradient}" HorizontalAlignment="Left">
+              <TextBlock Classes="icon" Text="&#xe19f;" FontSize="22" Foreground="White" HorizontalAlignment="Center"/>
+            </Border>
+            <Button Classes="icon" Tag="authClose" HorizontalAlignment="Right" VerticalAlignment="Top" Content="&#xe1b2;" ToolTip.Tip="{l:Tr auth.close}"/>
+          </Grid>
+          <TextBlock Text="{l:Tr auth.title}" FontSize="20" FontWeight="SemiBold" Margin="0,14,0,6"/>
+          <TextBlock Text="{l:Tr auth.detail}" Classes="hint" FontSize="13"/>
+          <TextBlock Text="{l:Tr auth.browser}" Classes="field" Margin="0,16,0,6"/>
+          <ComboBox Name="BrowserBox"/>
+          <TextBlock Name="AuthStatus" TextWrapping="Wrap" Margin="0,12,0,0" IsVisible="False"/>
+          <ProgressBar Name="AuthBusy" IsIndeterminate="True" Margin="0,10,0,0" IsVisible="False"/>
+          <WrapPanel Margin="0,16,0,0">
+            <Button Name="AuthUse" Classes="primary" Tag="authUse" Content="{l:Tr auth.use}" Margin="0,0,8,8"/>
+            <Button Name="AuthOpenPage" Tag="authOpenPage" Content="{l:Tr auth.opensignin}" Margin="0,0,8,8" IsVisible="False"/>
+            <Button Name="AuthSeparate" Tag="authSeparate" Content="{l:Tr auth.separate}" ToolTip.Tip="{l:Tr auth.separate.tip}" Margin="0,0,8,8"/>
+            <Button Tag="authImport" Content="{l:Tr auth.importfile}" Margin="0,0,8,8"/>
+            <Button Name="AuthSignOut" Classes="ghost" Tag="signout" Height="38" Content="{l:Tr auth.signout}" Margin="0,0,0,8"/>
+          </WrapPanel>
+          <Border Background="{DynamicResource Well}" CornerRadius="12" Padding="14,12" Margin="0,8,0,0">
+            <TextBlock Text="{l:Tr auth.privacy}" Classes="hint" FontSize="12.5"/>
+          </Border>
+        </StackPanel>
+      </Border>
+    </Grid>
+
+    <!-- First-run setup -->
+    <Grid Name="SetupOverlay" Grid.RowSpan="4" IsVisible="False">
+      <Border Background="{DynamicResource Scrim}"/>
+      <Border Classes="dialog" Width="520" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="28,24">
+        <StackPanel>
+          <Image Source="avares://Volna/Assets/icon-256.png" Width="56" Height="56" HorizontalAlignment="Left"/>
+          <TextBlock Text="{l:Tr setup.title}" FontSize="20" FontWeight="SemiBold" Margin="0,14,0,6"/>
+          <TextBlock Text="{l:Tr setup.detail}" Classes="hint" FontSize="13"/>
+          <TextBlock Name="SetupStatus" Margin="0,16,0,8" TextWrapping="Wrap"/>
+          <ProgressBar Name="SetupBar" Maximum="1"/>
+          <StackPanel Name="SetupActions" Margin="0,16,0,0" IsVisible="False">
+            <TextBlock Text="{l:Tr settings.proxy}" Classes="field"/>
+            <TextBox Name="SetupProxy" PlaceholderText="{l:Tr settings.proxy.hint}" Margin="0,0,0,14"/>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button Classes="primary" Tag="setupRetry" Content="{l:Tr setup.retry}"/>
+              <Button Classes="ghost" Height="38" Tag="setupSkip" Content="{l:Tr setup.skip}"/>
+            </StackPanel>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </Grid>
+
+    <!-- Settings -->
+    <Grid Name="SettingsOverlay" Grid.RowSpan="4" IsVisible="False">
+      <Border Background="{DynamicResource Scrim}"/>
+      <Border Classes="dialog" Width="560" MaxHeight="680" Margin="40" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="26,20,14,16">
+        <DockPanel>
+          <Grid DockPanel.Dock="Top" Margin="0,0,10,4">
+            <TextBlock Text="{l:Tr settings.open}" FontSize="19" FontWeight="SemiBold" VerticalAlignment="Center"/>
+            <Button Classes="icon" Tag="settingsClose" HorizontalAlignment="Right" Content="&#xe1b2;" ToolTip.Tip="{l:Tr picker.close}"/>
+          </Grid>
+          <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="8" Margin="0,14,0,0">
+            <Button Name="UpdateButton" Tag="update" ToolTip.Tip="{l:Tr header.update.tip}">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Classes="icon" Text="&#xe145;" FontSize="14"/>
+                <TextBlock Text="{l:Tr header.update}" VerticalAlignment="Center"/>
+              </StackPanel>
+            </Button>
+            <Button Tag="settingsLog" ToolTip.Tip="{l:Tr header.log.tip}">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Classes="icon" Text="&#xe181;" FontSize="14"/>
+                <TextBlock Text="{l:Tr header.log}" VerticalAlignment="Center"/>
+              </StackPanel>
+            </Button>
+          </StackPanel>
+          <ScrollViewer HorizontalScrollBarVisibility="Disabled" Padding="0,0,12,0">
+          <StackPanel>
+            <TextBlock Text="{l:Tr settings.section.downloads}" Classes="section" Margin="0,14,0,10"/>
+            <Grid ColumnDefinitions="*,176" Margin="0,0,0,12">
+              <TextBlock Text="{l:Tr settings.parallel.label}" VerticalAlignment="Center"/>
+              <Border Grid.Column="1" Background="{DynamicResource Well}" CornerRadius="10" Padding="3">
+                <UniformGrid Columns="4">
+                  <RadioButton Name="Par1" Classes="segment" GroupName="Par" Content="1"/>
+                  <RadioButton Name="Par2" Classes="segment" GroupName="Par" Content="2"/>
+                  <RadioButton Name="Par3" Classes="segment" GroupName="Par" Content="3"/>
+                  <RadioButton Name="Par4" Classes="segment" GroupName="Par" Content="4"/>
+                </UniformGrid>
+              </Border>
+            </Grid>
+            <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+              <StackPanel VerticalAlignment="Center"><TextBlock Text="{l:Tr header.clipboard}"/><TextBlock Text="{l:Tr settings.clipboard.hint}" Classes="hint"/></StackPanel>
+              <ToggleSwitch Name="ClipboardBox" Grid.Column="1" OnContent="" OffContent="" MinWidth="0" Padding="0"/>
+            </Grid>
+            <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+              <StackPanel VerticalAlignment="Center"><TextBlock Text="{l:Tr settings.autostart}"/><TextBlock Text="{l:Tr settings.autostart.hint}" Classes="hint"/></StackPanel>
+              <ToggleSwitch Name="AutoStartBox" Grid.Column="1" OnContent="" OffContent="" MinWidth="0" Padding="0"/>
+            </Grid>
+            <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+              <StackPanel VerticalAlignment="Center"><TextBlock Text="{l:Tr settings.skipdone}"/><TextBlock Text="{l:Tr settings.skipdone.hint}" Classes="hint"/></StackPanel>
+              <ToggleSwitch Name="SkipDoneBox" Grid.Column="1" OnContent="" OffContent="" MinWidth="0" Padding="0"/>
+            </Grid>
+            <TextBlock Text="{l:Tr settings.section.files}" Classes="section" Margin="0,14,0,10"/>
+            <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+              <StackPanel VerticalAlignment="Center"><TextBlock Text="{l:Tr settings.cover}"/><TextBlock Text="{l:Tr settings.cover.hint}" Classes="hint"/></StackPanel>
+              <ToggleSwitch Name="EmbedThumbBox" Grid.Column="1" OnContent="" OffContent="" MinWidth="0" Padding="0"/>
+            </Grid>
+            <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+              <StackPanel VerticalAlignment="Center"><TextBlock Text="{l:Tr settings.sponsor}"/><TextBlock Text="{l:Tr settings.sponsor.hint}" Classes="hint"/></StackPanel>
+              <ToggleSwitch Name="SponsorBox" Grid.Column="1" OnContent="" OffContent="" MinWidth="0" Padding="0"/>
+            </Grid>
+            <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+              <StackPanel VerticalAlignment="Center"><TextBlock Text="{l:Tr settings.playlists}"/><TextBlock Text="{l:Tr settings.playlists.hint}" Classes="hint"/></StackPanel>
+              <ToggleSwitch Name="PlaylistsBox" Grid.Column="1" OnContent="" OffContent="" MinWidth="0" Padding="0"/>
+            </Grid>
+            <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+              <StackPanel VerticalAlignment="Center"><TextBlock Text="{l:Tr settings.cleannames}"/><TextBlock Text="{l:Tr settings.cleannames.hint}" Classes="hint"/></StackPanel>
+              <ToggleSwitch Name="CleanNamesBox" Grid.Column="1" OnContent="" OffContent="" MinWidth="0" Padding="0"/>
+            </Grid>
+            <TextBlock Text="{l:Tr settings.section.finished}" Classes="section" Margin="0,14,0,10"/>
+            <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+              <StackPanel VerticalAlignment="Center"><TextBlock Text="{l:Tr settings.openafter}"/><TextBlock Text="{l:Tr settings.openafter.hint}" Classes="hint"/></StackPanel>
+              <ToggleSwitch Name="OpenAfterBox" Grid.Column="1" OnContent="" OffContent="" MinWidth="0" Padding="0"/>
+            </Grid>
+            <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+              <StackPanel VerticalAlignment="Center"><TextBlock Text="{l:Tr settings.sound}"/><TextBlock Text="{l:Tr settings.sound.hint}" Classes="hint"/></StackPanel>
+              <ToggleSwitch Name="SoundBox" Grid.Column="1" OnContent="" OffContent="" MinWidth="0" Padding="0"/>
+            </Grid>
+            <StackPanel Name="FollowedPanel" Margin="0,4,0,8" IsVisible="False">
+              <Grid ColumnDefinitions="*,Auto" Margin="0,8,0,4">
+                <TextBlock Text="{l:Tr settings.followed}" Classes="section" Margin="0" VerticalAlignment="Center"/>
+                <Button Grid.Column="1" Classes="ghost" Tag="checkFollowed" Content="{l:Tr settings.followed.check}"/>
+              </Grid>
+              <ItemsControl Name="FollowedItems">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="core:FollowedList">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <TextBlock Text="{Binding Name}" ToolTip.Tip="{Binding Url}" Classes="hint" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                      <Button Grid.Column="1" Classes="icon danger" Tag="unfollow" Width="30" Height="30" FontSize="13" Content="&#xe1b2;" ToolTip.Tip="{l:Tr settings.followed.remove}"/>
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+            <TextBlock Text="{l:Tr settings.section.look}" Classes="section" Margin="0,14,0,10"/>
+            <Grid ColumnDefinitions="*,12,*">
+              <StackPanel>
+                <TextBlock Text="{l:Tr settings.theme}" Classes="field"/>
+                <ComboBox Name="ThemeBox">
+                  <ComboBoxItem Content="{l:Tr settings.theme.dark}"/>
+                  <ComboBoxItem Content="{l:Tr settings.theme.light}"/>
+                  <ComboBoxItem Content="{l:Tr settings.theme.system}"/>
+                </ComboBox>
+              </StackPanel>
+              <StackPanel Grid.Column="2">
+                <TextBlock Text="{l:Tr settings.language}" Classes="field"/>
+                <ComboBox Name="LanguageBox">
+                  <ComboBoxItem Content="{l:Tr settings.language.auto}"/>
+                  <ComboBoxItem Content="English"/>
+                  <ComboBoxItem Content="Русский"/>
+                </ComboBox>
+              </StackPanel>
+            </Grid>
+            <TextBlock Name="LanguageNote" Text="{l:Tr settings.language.restart}" Classes="hint" Margin="0,4,0,0" IsVisible="False"/>
+            <TextBlock Text="{l:Tr settings.proxy}" Classes="section" Margin="0,14,0,10"/>
+            <TextBox Name="ProxyBox" PlaceholderText="{l:Tr settings.proxy.hint}"/>
+            <TextBlock Text="{l:Tr settings.proxy.note}" Classes="hint" Margin="0,4,0,4"/>
+          </StackPanel>
+          </ScrollViewer>
+        </DockPanel>
+      </Border>
+    </Grid>
+
+    <!-- A table whose columns need confirming -->
+    <Grid Name="ImportOverlay" Grid.RowSpan="4" IsVisible="False">
+      <Border Background="{DynamicResource Scrim}"/>
+      <Border Classes="dialog" Width="620" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="26,22">
+        <StackPanel>
+          <TextBlock Text="{l:Tr import.check.title}" FontSize="19" FontWeight="SemiBold"/>
+          <TextBlock Text="{l:Tr import.check.detail}" Classes="hint" FontSize="13" Margin="0,6,0,14"/>
+          <Grid ColumnDefinitions="*,12,*">
+            <StackPanel>
+              <TextBlock Text="{l:Tr import.artist}" Classes="field"/>
+              <ComboBox Name="ImportArtist" HorizontalAlignment="Stretch"/>
+            </StackPanel>
+            <StackPanel Grid.Column="2">
+              <TextBlock Text="{l:Tr import.titlecol}" Classes="field"/>
+              <ComboBox Name="ImportTitle" HorizontalAlignment="Stretch"/>
+            </StackPanel>
+          </Grid>
+          <CheckBox Name="ImportHeader" Content="{l:Tr import.header}" Margin="0,10,0,0"/>
+          <TextBlock Text="{l:Tr import.preview}" Classes="field" Margin="0,12,0,6"/>
+          <Border Background="{DynamicResource Well}" CornerRadius="12" Padding="14,10">
+            <ItemsControl Name="ImportPreview">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                  <TextBlock Text="{Binding}" TextTrimming="CharacterEllipsis" Margin="0,2"/>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </Border>
+          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,16,0,0">
+            <Button Classes="primary" Tag="importAdd">
+              <TextBlock Name="ImportAddText" VerticalAlignment="Center"/>
+            </Button>
+            <Button Tag="importPlain" Content="{l:Tr import.plain}" ToolTip.Tip="{l:Tr import.plain.tip}"/>
+            <Button Classes="ghost" Height="38" Tag="importClose" Content="{l:Tr picker.close}"/>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </Grid>
+
+    <!-- A part of a video -->
+    <Grid Name="ClipOverlay" Grid.RowSpan="4" IsVisible="False">
+      <Border Background="{DynamicResource Scrim}"/>
+      <Border Classes="dialog" Width="460" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="26,22">
+        <StackPanel>
+          <TextBlock Text="{l:Tr clip.title}" FontSize="18" FontWeight="SemiBold"/>
+          <TextBlock Text="{l:Tr clip.detail}" Classes="hint" FontSize="13" Margin="0,6,0,14"/>
+          <Grid ColumnDefinitions="*,12,*" Margin="0,0,0,16">
+            <StackPanel>
+              <TextBlock Text="{l:Tr clip.from}" Classes="field"/>
+              <TextBox Name="ClipFrom" PlaceholderText="0:00"/>
+            </StackPanel>
+            <StackPanel Grid.Column="2">
+              <TextBlock Text="{l:Tr clip.to}" Classes="field"/>
+              <TextBox Name="ClipTo"/>
+            </StackPanel>
+          </Grid>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Classes="primary" Tag="clipSet" Content="{l:Tr clip.set}"/>
+            <Button Tag="clipClear" Content="{l:Tr clip.clear}"/>
+            <Button Classes="ghost" Height="38" Tag="clipClose" Content="{l:Tr picker.close}"/>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </Grid>
+
+    <!-- Closing while downloading -->
+    <Grid Name="CloseOverlay" Grid.RowSpan="4" IsVisible="False">
+      <Border Background="{DynamicResource Scrim}"/>
+      <Border Classes="dialog" Width="460" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="26,22">
+        <StackPanel>
+          <TextBlock Text="{l:Tr close.title}" FontSize="18" FontWeight="SemiBold"/>
+          <TextBlock Text="{l:Tr close.detail}" Classes="hint" FontSize="13" Margin="0,6,0,16"/>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Classes="primary" Tag="closeYes" Content="{l:Tr close.yes}"/>
+            <Button Tag="closeNo" Content="{l:Tr close.no}"/>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </Grid>
+
+    <!-- Drop target -->
+    <Border Name="DropOverlay" Grid.RowSpan="4" Background="{DynamicResource Scrim}" IsVisible="False" IsHitTestVisible="False">
+      <Panel Margin="20">
+        <Rectangle RadiusX="24" RadiusY="24" Stroke="#FF4D67" StrokeThickness="2" StrokeDashArray="6,4"/>
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+          <TextBlock Classes="icon" Text="&#xe0b2;" FontSize="44" Foreground="#FF6B7F" HorizontalAlignment="Center"/>
+          <TextBlock Text="{l:Tr drop.title}" FontSize="22" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,14,0,4"/>
+          <TextBlock Text="{l:Tr drop.detail}" Classes="muted" HorizontalAlignment="Center"/>
+        </StackPanel>
+      </Panel>
+    </Border>
+  </Grid>
+</Window>

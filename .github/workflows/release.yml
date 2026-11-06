@@ -1,0 +1,55 @@
+name: Release
+
+# Pushing a tag such as v1.0.0 builds every package and publishes a GitHub release.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: windows-latest, rid: win-x64 }
+          - { os: ubuntu-latest, rid: linux-x64 }
+          - { os: ubuntu-latest, rid: linux-arm64 }
+          - { os: macos-latest, rid: osx-arm64 }
+          - { os: macos-latest, rid: osx-x64 }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Tests
+        run: dotnet test tests/Volna.Tests/Volna.Tests.csproj --nologo
+      - name: Package
+        shell: bash
+        run: bash tools/package.sh "${{ matrix.rid }}" "${GITHUB_REF_NAME#v}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: package-${{ matrix.rid }}
+          path: |
+            dist/*.zip
+            dist/*.tar.gz
+
+  publish:
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: packages
+          merge-multiple: true
+      - name: Checksums
+        working-directory: packages
+        run: sha256sum -- * > SHA256SUMS.txt
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" packages/* --title "Volna ${GITHUB_REF_NAME#v}" --generate-notes --verify-tag

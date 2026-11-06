@@ -1,0 +1,9 @@
+bin/
+obj/
+.vs/
+.vscode/
+*.user
+demo-output/
+dist/
+.DS_Store
+acceptance-output/

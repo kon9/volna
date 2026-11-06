@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: C# formatting
+        run: dotnet format Volna.sln --verify-no-changes --verbosity minimal
+      - name: Shell scripts
+        run: shellcheck tools/*.sh packaging/linux/install.sh
+      - name: Workflows
+        uses: docker://rhysd/actionlint:1.7.7
+        with:
+          args: -color
+      - name: Markdown
+        run: npx --yes markdownlint-cli2@0.18.1
+
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Unit tests
+        run: dotnet test tests/Volna.Tests/Volna.Tests.csproj --nologo
+      - name: The interface builds and renders
+        run: dotnet run -c Release --project tools/Demo/Demo.csproj -- smoke
+      - name: The agent starts
+        run: dotnet run -c Release --project src/Volna.Agent/Volna.Agent.csproj -- --help
+      - name: First-run tool install works here
+        run: dotnet run -c Release --project tools/Demo/Demo.csproj -- install
+      - name: A real download of an open film
+        shell: bash
+        env:
+          VOLNA_FOLDER: ${{ runner.temp }}/downloads
+        # Cloud machines are often refused by YouTube, so this reports but does not fail the build.
+        continue-on-error: true
+        run: dotnet run -c Release --project src/Volna.Agent/Volna.Agent.csproj -- download --target "https://www.youtube.com/watch?v=aqz-KE-bpKQ" --kind audio
+      - name: Packages build
+        shell: bash
+        run: |
+          case "${{ runner.os }}" in
+            Windows) bash tools/package.sh win-x64 ;;
+            Linux) bash tools/package.sh linux-x64 ;;
+            macOS) bash tools/package.sh osx-arm64 ;;
+          esac

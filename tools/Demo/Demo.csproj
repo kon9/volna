@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Headless" Version="12.1.5" />
+    <PackageReference Include="Avalonia.Skia" Version="12.1.5" />
+    <ProjectReference Include="..\..\src\Volna.App\Volna.App.csproj" />
+  </ItemGroup>
+</Project>

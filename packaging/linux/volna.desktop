@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Volna
+Comment=Download video and music, with search by name
+Exec=volna %U
+Icon=volna
+Terminal=false
+Categories=AudioVideo;Network;
+Keywords=youtube;download;music;video;yt-dlp;
