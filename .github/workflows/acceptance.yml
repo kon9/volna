@@ -26,7 +26,7 @@ jobs:
       - name: Real downloads, checked
         shell: bash
         run: bash tools/acceptance.sh "${{ runner.temp }}/acceptance"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: acceptance-${{ matrix.os }}
