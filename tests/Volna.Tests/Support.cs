@@ -152,7 +152,7 @@ public sealed class TestRoom : IDisposable
     public void Dispose()
     {
         Queue.Dispose();
-        AppPaths.Override = null;
+        AppPaths.Override = TestSetup.Data;
         try { Directory.Delete(Folder, true); } catch (IOException) { } catch (UnauthorizedAccessException) { }
     }
 }
