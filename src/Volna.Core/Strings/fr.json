@@ -89,7 +89,7 @@
   "settings.cover": "Pochette et tags",
   "settings.cover.hint": "La miniature devient la pochette du fichier",
   "settings.subs": "Sous-titres",
-  "settings.subs.hint": "Dans la langue du système et en anglais, automatiques compris",
+  "settings.subs.hint": "Dans la langue de la vidéo : ceux de l’auteur, sinon automatiques",
   "settings.sponsor": "Couper les sponsors",
   "settings.sponsor.hint": "SponsorBlock, YouTube uniquement",
   "settings.autostart": "Télécharger immédiatement",

@@ -912,6 +912,7 @@ public sealed class QueueController : IDisposable
             AudioFormat = prefs.AudioFormat,
             EmbedThumbnail = prefs.EmbedThumbnail,
             Subtitles = prefs.Subtitles,
+            Language = Engine.LanguageOf(item.Info.Str("language")),
             SponsorBlock = prefs.SponsorBlock && item.Section == null,
             Original = item.IsOriginal,
             CutOfftopic = item.AudioMode && prefs.OriginalTracks && !item.IsOriginal && IsYouTube(item) && item.Section == null,
@@ -1576,7 +1577,7 @@ public sealed class QueueController : IDisposable
     // ---------- Queue that survives a restart ----------
 
     static readonly string[] SavedKeys = { "id", "title", "uploader", "channel", "duration", "thumbnail", "view_count", "webpage_url", "url",
-        "ie_key", "extractor_key", "height", "live_status", "playlist_title", "album", "is_original", "source", "track", "artist", "creator" };
+        "ie_key", "extractor_key", "height", "live_status", "playlist_title", "album", "is_original", "source", "track", "artist", "creator", "language" };
 
     // Keeps only the fields the card needs; full video info can be tens of kilobytes per item.
     static Dictionary<string, object?> Slim(Dictionary<string, object?> info)

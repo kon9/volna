@@ -58,6 +58,14 @@ public sealed class YtDlpBackend : IQueueBackend
         RunResult? result = null;
         try
         {
+            // A video from a list or a search does not say its language, and its subtitles depend on it.
+            if (options.Subtitles && !options.Audio && options.Language == null)
+            {
+                string? spoken = null;
+                var asked = await runner.RunAsync(ToolManager.YtDlp, Engine.LanguageArgs(options.Url, lease.Args, options.Proxy), line => spoken ??= Engine.LanguageOf(line));
+                if (asked.Cancelled) return asked;
+                options.Language = spoken;
+            }
             result = await runner.RunAsync(ToolManager.YtDlp, Engine.DownloadArgs(options, lease.Args), onLine);
             return result;
         }

@@ -89,7 +89,7 @@
   "settings.cover": "カバーとタグ",
   "settings.cover.hint": "プレビュー画像をファイルのカバーにします",
   "settings.subs": "字幕",
-  "settings.subs.hint": "システムの言語と英語、自動生成字幕を含む",
+  "settings.subs.hint": "動画の言語で：投稿者の字幕、なければ自動生成",
   "settings.sponsor": "スポンサー部分をカット",
   "settings.sponsor.hint": "SponsorBlock、YouTubeのみ",
   "settings.autostart": "すぐにダウンロード",

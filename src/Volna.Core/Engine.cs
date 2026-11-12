@@ -13,6 +13,7 @@ public sealed class DownloadOptions
     public string Container { get; set; } = "mp4";
     public bool EmbedThumbnail { get; set; } = true;
     public bool Subtitles { get; set; }
+    public string? Language { get; set; } // spoken in the video, for its subtitles; found before the download when unknown
     public bool SponsorBlock { get; set; }
     public bool Original { get; set; }      // an art track: its file is named "Artist - Track"
     public bool CutOfftopic { get; set; }   // audio from a music video: cut the parts that are not music
@@ -184,7 +185,7 @@ public static partial class Engine
         // Lazily, so that a whole channel shows how far it has got instead of nothing for a minute.
         args.AddRange(new[] { "--flat-playlist", "--lazy-playlist", "--skip-download", "--no-playlist",
             "--playlist-items", "1:" + limit.ToString(CultureInfo.InvariantCulture),
-            "--print", "%(.{id,title,uploader,channel,duration,thumbnail,thumbnails,view_count,webpage_url,url,ie_key,extractor_key,height,playlist_title,live_status,track,artist,creator,album})j",
+            "--print", "%(.{id,title,uploader,channel,duration,thumbnail,thumbnails,view_count,webpage_url,url,ie_key,extractor_key,height,playlist_title,live_status,track,artist,creator,album,language})j",
             "--" });
         args.AddRange(entries);
         return args;
@@ -260,7 +261,7 @@ public static partial class Engine
             args.AddRange(new[] { "--format", "bv*" + limit + "+ba/b" + limit,
                 "--format-sort", "lang,res,vcodec:h264,acodec:aac", "--merge-output-format", o.Container, "--remux-video", o.Container });
             // --ignore-errors: subtitles refused by the site must not cost the video itself.
-            if (o.Subtitles) args.AddRange(new[] { "--write-subs", "--write-auto-subs", "--sub-langs", SubtitleLanguages(Loc.SystemLanguage(), Loc.Language), "--embed-subs", "--ignore-errors" });
+            if (o.Subtitles) args.AddRange(SubtitleArgs(o.Language));
         }
         if (o.EmbedThumbnail) args.AddRange(["--embed-thumbnail", "--convert-thumbnails", "jpg"]);
         var cuts = new List<string>();
@@ -276,11 +277,38 @@ public static partial class Engine
     }
 
     /// <summary>
-    /// Subtitles in the system's language, whatever it is, in the interface's if that differs, and in English.
-    /// "-orig" is a second copy of automatic ones.
+    /// The subtitles of the video's own language: the author's where there are some, otherwise the automatic ones
+    /// made from its speech. YouTube also offers a machine translation into every other language; those are left out,
+    /// as is "en-orig", a second copy of the automatic ones. A video whose language is unknown gets the author's
+    /// subtitles in the system's language or in English, and none made by a machine.
+    /// --ignore-errors: subtitles refused by the site must not cost the video itself.
     /// </summary>
-    public static string SubtitleLanguages(params string[] languages) =>
-        string.Join(",", languages.Append("en").Where(l => l.Length >= 2 && l.All(char.IsAsciiLetterLower)).Distinct().Select(l => l + ".*")) + ",-.*-orig";
+    public static string[] SubtitleArgs(string? language)
+    {
+        // yt-dlp prefers the author's track of a language to the automatic one of the same name. It compares names
+        // ignoring case, so "en-GB" cannot be told from "en-ja", English made from Japanese: only the plain name is asked for.
+        if (language != null) return ["--write-subs", "--write-auto-subs", "--sub-langs", language, "--embed-subs", "--ignore-errors"];
+        string mine = Loc.SystemLanguage();
+        return ["--write-subs", "--sub-langs", mine == "en" ? "en" : mine + ",en", "--embed-subs", "--ignore-errors"];
+    }
+
+    /// <summary>The language a video is spoken in, as "en" or "pt", from what the site says; null when it says nothing.</summary>
+    public static string? LanguageOf(string? reported)
+    {
+        // "NA" is how yt-dlp prints a field the site left empty.
+        if (reported is null || reported.Trim() is "NA" or "none") return null;
+        string code = reported.Trim().Split('-', '_')[0].ToLowerInvariant();
+        return code.Length is 2 or 3 && code.All(char.IsAsciiLetterLower) ? code : null;
+    }
+
+    /// <summary>Only what the video is spoken in, for a video found in a list, which does not say it.</summary>
+    public static List<string> LanguageArgs(string url, IEnumerable<string> auth, string proxy)
+    {
+        var args = CommonArgs(auth, proxy);
+        args.AddRange(new[] { "--skip-download", "--no-playlist", "--ignore-no-formats-error", "--no-warnings",
+            "--extractor-args", "youtube:player_skip=js", "--print", "%(language)s", "--", url });
+        return args;
+    }
 
     /// <summary>The playlist a link to one of its videos was opened from. YouTube's endless mixes do not count.</summary>
     public static string? PlaylistOf(string url)

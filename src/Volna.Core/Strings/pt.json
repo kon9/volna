@@ -89,7 +89,7 @@
   "settings.cover": "Capa e tags",
   "settings.cover.hint": "A miniatura vira a capa do arquivo",
   "settings.subs": "Legendas",
-  "settings.subs.hint": "No idioma do seu sistema e em inglês, incluindo as automáticas",
+  "settings.subs.hint": "No idioma do vídeo: as do autor ou, se não houver, automáticas",
   "settings.sponsor": "Cortar trechos de patrocínio",
   "settings.sponsor.hint": "SponsorBlock, só YouTube",
   "settings.autostart": "Baixar imediatamente",

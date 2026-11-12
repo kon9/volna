@@ -18,7 +18,7 @@ Find video and music by name or link, check each match, download. For Windows, m
 - **Far more than YouTube.** SoundCloud, Vimeo, TikTok, Twitch, Bandcamp, and [everything else yt-dlp supports](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md): paste a link, nothing to configure.
 - **Your browser's sign-ins.** For age-restricted and private videos it uses the browser you already use. There is no account to create, and your passwords never touch the app.
 - **Only the part you want.** Thirty seconds from a twelve-hour stream download as thirty seconds, not twelve hours. Find the moment by its frames, or paste a link with a time in it.
-- **In your language.** The interface follows your system's language, in 15 of the most used ones, and subtitles come in your language and in English.
+- **In your language.** The interface follows your system's language, in 15 of the most used ones. Subtitles come in the video's own language: the author's, or else the automatic ones, never a machine translation.
 - **Small things that add up.** Lyrics next to each song, playlists that stay up to date, the original soundtrack on dubbed videos, and no second copy of what you already have.
 - **AI assistants can use it.** A built-in [MCP](https://modelcontextprotocol.io/) server lets models search, download, read transcripts and look at video frames.
 

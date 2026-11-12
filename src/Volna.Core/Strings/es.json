@@ -89,7 +89,7 @@
   "settings.cover": "Carátula y etiquetas",
   "settings.cover.hint": "La miniatura se convierte en la carátula del archivo",
   "settings.subs": "Subtítulos",
-  "settings.subs.hint": "En el idioma de tu sistema y en inglés, incluidos los automáticos",
+  "settings.subs.hint": "En el idioma del vídeo: los del autor o, si no hay, automáticos",
   "settings.sponsor": "Quitar segmentos de patrocinio",
   "settings.sponsor.hint": "SponsorBlock, solo YouTube",
   "settings.autostart": "Descargar de inmediato",

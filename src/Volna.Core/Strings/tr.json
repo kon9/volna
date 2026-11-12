@@ -89,7 +89,7 @@
   "settings.cover": "Kapak ve etiketler",
   "settings.cover.hint": "Önizleme dosyanın kapağı olur",
   "settings.subs": "Altyazılar",
-  "settings.subs.hint": "Sistem dilinde ve İngilizce, otomatik olanlar dahil",
+  "settings.subs.hint": "Videonun dilinde: yükleyeninki, yoksa otomatik olanlar",
   "settings.sponsor": "Sponsor bölümlerini kes",
   "settings.sponsor.hint": "SponsorBlock, yalnızca YouTube",
   "settings.autostart": "Hemen indir",

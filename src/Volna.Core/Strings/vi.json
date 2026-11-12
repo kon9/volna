@@ -89,7 +89,7 @@
   "settings.cover": "Ảnh bìa và thẻ",
   "settings.cover.hint": "Ảnh xem trước trở thành ảnh bìa của tệp",
   "settings.subs": "Phụ đề",
-  "settings.subs.hint": "Theo ngôn ngữ hệ thống và tiếng Anh, gồm cả phụ đề tự động",
+  "settings.subs.hint": "Theo ngôn ngữ của video: của tác giả, nếu không có thì tự động",
   "settings.sponsor": "Cắt đoạn tài trợ",
   "settings.sponsor.hint": "SponsorBlock, chỉ YouTube",
   "settings.autostart": "Tải ngay",

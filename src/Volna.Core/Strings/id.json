@@ -89,7 +89,7 @@
   "settings.cover": "Sampul dan tag",
   "settings.cover.hint": "Pratinjau menjadi sampul file",
   "settings.subs": "Subtitel",
-  "settings.subs.hint": "Dalam bahasa sistem dan bahasa Inggris, termasuk yang otomatis",
+  "settings.subs.hint": "Dalam bahasa video: dari pembuat, atau yang otomatis",
   "settings.sponsor": "Potong segmen sponsor",
   "settings.sponsor.hint": "SponsorBlock, hanya YouTube",
   "settings.autostart": "Unduh langsung",

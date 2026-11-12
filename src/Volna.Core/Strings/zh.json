@@ -89,7 +89,7 @@
   "settings.cover": "封面和标签",
   "settings.cover.hint": "将预览图设为文件封面",
   "settings.subs": "字幕",
-  "settings.subs.hint": "系统语言和英语，包括自动生成的字幕",
+  "settings.subs.hint": "视频本身的语言：优先作者上传的，没有则用自动生成的",
   "settings.sponsor": "剪掉赞助片段",
   "settings.sponsor.hint": "SponsorBlock，仅限 YouTube",
   "settings.autostart": "立即下载",

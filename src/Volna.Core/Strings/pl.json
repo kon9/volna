@@ -89,7 +89,7 @@
   "settings.cover": "Okładka i tagi",
   "settings.cover.hint": "Miniatura stanie się okładką pliku",
   "settings.subs": "Napisy",
-  "settings.subs.hint": "W języku systemu i po angielsku, także automatyczne",
+  "settings.subs.hint": "W języku filmu: od autora, a jeśli ich brak — automatyczne",
   "settings.sponsor": "Wycinaj fragmenty sponsorów",
   "settings.sponsor.hint": "SponsorBlock, tylko YouTube",
   "settings.autostart": "Pobieraj od razu",

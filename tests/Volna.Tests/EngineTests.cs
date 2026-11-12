@@ -76,13 +76,32 @@ public class EngineTests
         Assert.Null(Engine.MatchExisting(new[] { "a [x].mkv" }, true, "mp3", "mp4"));
     }
 
+    [Fact]
+    public void Subtitles_are_those_of_the_videos_own_language()
+    {
+        var args = Engine.SubtitleArgs("ru");
+        Assert.Contains("--write-auto-subs", args);
+        string langs = args[Array.IndexOf(args, "--sub-langs") + 1];
+        // yt-dlp matches each entry against the whole name of a track, ignoring case.
+        var wanted = new System.Text.RegularExpressions.Regex("^(?:" + langs + ")$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        Assert.Matches(wanted, "ru");
+        Assert.DoesNotMatch(wanted, "ru-orig");  // a second copy of the automatic track
+        Assert.DoesNotMatch(wanted, "ru-en");    // Russian made by a machine from English
+        Assert.DoesNotMatch(wanted, "en");
+    }
+
+    [Fact]
+    public void Without_a_known_language_no_subtitles_made_by_a_machine() => Assert.DoesNotContain("--write-auto-subs", Engine.SubtitleArgs(null));
+
     [Theory]
-    [InlineData("en", "en", "en.*,-.*-orig")]
-    [InlineData("ru", "ru", "ru.*,en.*,-.*-orig")]
-    [InlineData("ja", "en", "ja.*,en.*,-.*-orig")]     // a system language the interface has no table for still gets its subtitles
-    [InlineData("de", "fr", "de.*,fr.*,en.*,-.*-orig")]
-    [InlineData("iv", "en", "iv.*,en.*,-.*-orig")]
-    public void Subtitles_follow_the_system_language(string system, string shown, string expected) => Assert.Equal(expected, Engine.SubtitleLanguages(system, shown));
+    [InlineData("en", "en")]
+    [InlineData("pt-BR", "pt")]
+    [InlineData("es-419", "es")]
+    [InlineData("zh_Hans", "zh")]
+    [InlineData("NA", null)]
+    [InlineData("", null)]
+    [InlineData(null, null)]
+    public void A_videos_language_is_its_main_code(string? reported, string? expected) => Assert.Equal(expected, Engine.LanguageOf(reported));
 
     [Fact]
     public void Views_in_East_Asian_languages_count_in_ten_thousands()
@@ -356,8 +375,8 @@ public class EngineTests
     }
 
     [Fact] // Most videos only have automatic captions, and asking for subtitles alone leaves those out
-    public void Subtitles_include_automatic_ones() =>
-        Assert.Contains("--write-auto-subs", Engine.DownloadArgs(new DownloadOptions { Url = "u", Folder = "x", Subtitles = true, Audio = false }, Array.Empty<string>()));
+    public void Subtitles_of_a_known_language_include_automatic_ones() =>
+        Assert.Contains("--write-auto-subs", Engine.DownloadArgs(new DownloadOptions { Url = "u", Folder = "x", Subtitles = true, Audio = false, Language = "en" }, Array.Empty<string>()));
 
     [Theory]
     [InlineData("https://www.youtube.com/watch?v=abc&list=PLxyz", "https://www.youtube.com/playlist?list=PLxyz")]

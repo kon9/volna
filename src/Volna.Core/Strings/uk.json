@@ -89,7 +89,7 @@
   "settings.cover": "Обкладинка й теги",
   "settings.cover.hint": "Мініатюра стає обкладинкою файлу",
   "settings.subs": "Субтитри",
-  "settings.subs.hint": "Мовою системи та англійською, зокрема автоматичні",
+  "settings.subs.hint": "Мовою відео: авторські, а якщо їх немає — автоматичні",
   "settings.sponsor": "Вирізати спонсорські вставки",
   "settings.sponsor.hint": "SponsorBlock, лише YouTube",
   "settings.autostart": "Завантажувати одразу",

@@ -89,7 +89,7 @@
   "settings.cover": "Copertina e tag",
   "settings.cover.hint": "L’anteprima diventa la copertina del file",
   "settings.subs": "Sottotitoli",
-  "settings.subs.hint": "Nella lingua del sistema e in inglese, anche automatici",
+  "settings.subs.hint": "Nella lingua del video: quelli dell’autore, altrimenti automatici",
   "settings.sponsor": "Taglia gli sponsor",
   "settings.sponsor.hint": "SponsorBlock, solo YouTube",
   "settings.autostart": "Scarica subito",

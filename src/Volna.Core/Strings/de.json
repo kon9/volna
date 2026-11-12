@@ -89,7 +89,7 @@
   "settings.cover": "Cover und Tags",
   "settings.cover.hint": "Die Vorschau wird zum Cover der Datei",
   "settings.subs": "Untertitel",
-  "settings.subs.hint": "In der Systemsprache und auf Englisch, auch automatische",
+  "settings.subs.hint": "In der Sprache des Videos: vom Autor, sonst automatische",
   "settings.sponsor": "Sponsorenteile entfernen",
   "settings.sponsor.hint": "SponsorBlock, nur YouTube",
   "settings.autostart": "Sofort laden",

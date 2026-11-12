@@ -89,7 +89,7 @@
   "settings.cover": "커버와 태그",
   "settings.cover.hint": "미리보기 이미지를 파일 커버로 사용",
   "settings.subs": "자막",
-  "settings.subs.hint": "시스템 언어와 영어, 자동 생성 자막 포함",
+  "settings.subs.hint": "영상 언어로: 제작자 자막, 없으면 자동 생성 자막",
   "settings.sponsor": "스폰서 구간 자르기",
   "settings.sponsor.hint": "SponsorBlock, YouTube 전용",
   "settings.autostart": "바로 다운로드",

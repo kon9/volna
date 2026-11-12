@@ -89,7 +89,7 @@
   "settings.cover": "Обложка и теги",
   "settings.cover.hint": "Превью станет обложкой файла",
   "settings.subs": "Субтитры",
-  "settings.subs.hint": "На языке системы и на английском, включая автоматические",
+  "settings.subs.hint": "На языке видео: авторские, а если их нет — автоматические",
   "settings.sponsor": "Вырезать спонсорские вставки",
   "settings.sponsor.hint": "SponsorBlock, только для YouTube",
   "settings.autostart": "Скачивать сразу",
