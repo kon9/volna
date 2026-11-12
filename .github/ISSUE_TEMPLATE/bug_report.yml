@@ -16,7 +16,7 @@ body:
     id: version
     attributes:
       label: Volna version and system
-      placeholder: 1.0.0 on Windows 11
+      placeholder: 1.1.0 on Windows 11
     validations:
       required: true
   - type: textarea

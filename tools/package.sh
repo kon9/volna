@@ -4,7 +4,7 @@
 # macOS packages must be built on macOS, because the bundle has to be signed there.
 set -euo pipefail
 RID="$1"
-VERSION="${2:-1.0.0}"
+VERSION="${2:-1.1.0}"
 OUT="dist/work/$RID"
 rm -rf "$OUT"
 mkdir -p "$OUT" dist

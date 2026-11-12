@@ -1654,8 +1654,12 @@ public sealed class QueueController : IDisposable
                 item.ClipInfo = entry.Raw("clip") as Dictionary<string, object?> ?? (item.IsOriginal ? null : info);
                 item.TrackInfo = entry.Raw("track") as Dictionary<string, object?> ?? (item.IsOriginal ? info : null);
                 item.ClipPlaylist = entry.Str("clipPlaylist") ?? entry.Str("playlist");
-                if (IsTaken(item, Key(item))) continue;
-                Claim(item);
+                // Parts of one video are cards of their own, beside the card of the whole video.
+                if (item.Section == null)
+                {
+                    if (IsTaken(item, Key(item))) continue;
+                    Claim(item);
+                }
                 item.Fetched = true;
                 item.State = ItemState.Ready;
                 item.StatusText = Loc.T("status.ready");
@@ -1693,6 +1697,54 @@ public sealed class QueueController : IDisposable
         RefreshLabels();
         item.Changed();
         return true;
+    }
+
+    /// <summary>The section for a part, in whole seconds; null when the part is the whole video.</summary>
+    public static string? SectionFor(double start, double end, double? duration)
+    {
+        long from = (long)Math.Floor(Math.Max(0, start)), to = (long)Math.Ceiling(end);
+        if (duration is > 0) to = Math.Min(to, (long)Math.Ceiling(duration.Value));
+        if (to - from < 1) return null;
+        if (from == 0 && duration is > 0 && to >= Math.Floor(duration.Value)) return null;
+        return from.ToString(CultureInfo.InvariantCulture) + "-" + to.ToString(CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>
+    /// Downloads only this part of the video, in seconds, and starts at once. A card that is finished or busy keeps its
+    /// file, and the part gets a card of its own under it; so does any further part of the same video.
+    /// </summary>
+    public QueueItem? DownloadPart(QueueItem item, double start, double end)
+    {
+        if (!item.Fetched || item.Info == null || end - start < 1) return null;
+        string? section = SectionFor(start, end, item.Info.Num("duration"));
+        QueueItem target = item;
+        if (!item.CanEdit)
+        {
+            target = new QueueItem
+            {
+                Number = nextNumber++,
+                SourceUrl = item.WebpageUrl ?? item.SourceUrl,
+                AudioMode = item.AudioMode,
+                ModeLocked = true,
+                HeightOverride = item.HeightOverride,
+                ThumbBytes = item.ThumbBytes,
+                Fetched = true,
+                TrackChecked = true,
+                State = ItemState.Ready,
+                StatusText = Loc.T("status.ready"),
+            };
+            ApplyInfo(target, item.Info, item.Playlist.Length > 0 ? item.Playlist : null);
+            target.ClipInfo = item.ClipInfo;
+            target.TrackInfo = item.TrackInfo;
+            int index = Items.IndexOf(item);
+            Items.Insert(index < 0 ? Items.Count : index + 1, target);
+        }
+        target.Section = section;
+        target.ForceDownload = false;
+        RefreshLabels(new[] { target });
+        target.Changed();
+        StartOne(target);
+        return target;
     }
 
     // ---------- Followed playlists ----------

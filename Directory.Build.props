@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
     <InvariantGlobalization>false</InvariantGlobalization>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
     <Authors>kon9</Authors>
     <Copyright>Copyright (C) 2026 kon9</Copyright>
     <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>

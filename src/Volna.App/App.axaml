@@ -170,6 +170,19 @@
       <Setter Property="Padding" Value="10,0"/>
       <Setter Property="FontSize" Value="12.5"/>
     </Style>
+    <!-- The window's own buttons sit in a thin strip at the top; where they do, the app's buttons there match them. -->
+    <Style Selector="Button.title"><Setter Property="Height" Value="34"/></Style>
+    <Style Selector="Grid.strip Button.title">
+      <Setter Property="Height" Value="26"/>
+      <Setter Property="Padding" Value="10,0"/>
+      <Setter Property="CornerRadius" Value="7"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
+    </Style>
+    <Style Selector="Grid.strip Button.title TextBlock"><Setter Property="FontSize" Value="12.5"/></Style>
+    <Style Selector="Grid.strip Image.logo"><Setter Property="Width" Value="20"/><Setter Property="Height" Value="20"/></Style>
+    <Style Selector="Grid.strip TextBlock.logo"><Setter Property="FontSize" Value="13.5"/></Style>
     <Style Selector="Button.icon">
       <Setter Property="Background" Value="Transparent"/>
       <Setter Property="BorderThickness" Value="0"/>
@@ -191,6 +204,19 @@
       <Setter Property="Margin" Value="0,0,6,4"/>
       <Setter Property="Background" Value="{DynamicResource Surface2}"/>
       <Setter Property="BorderBrush" Value="{DynamicResource Line2}"/>
+    </Style>
+    <Style Selector="Button.chip.on"><Setter Property="BorderBrush" Value="#FF4D67"/><Setter Property="Foreground" Value="{DynamicResource AccentText}"/></Style>
+    <Style Selector="Button.chip.on:pointerover /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="BorderBrush" Value="#FF4D67"/><Setter Property="Foreground" Value="{DynamicResource AccentText}"/></Style>
+    <Style Selector="Button.chip.length">
+      <Setter Property="Margin" Value="0"/>
+      <Setter Property="Height" Value="38"/>
+      <Setter Property="Padding" Value="8,0"/>
+    </Style>
+    <Style Selector="Button.step">
+      <Setter Property="Width" Value="36"/>
+      <Setter Property="Padding" Value="0"/>
+      <Setter Property="FontFamily" Value="{StaticResource Icons}"/>
+      <Setter Property="FontSize" Value="14"/>
     </Style>
     <Style Selector="Button:disabled /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Opacity" Value="0.55"/></Style>
     <Style Selector="Border.pill">

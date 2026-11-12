@@ -8,7 +8,7 @@ Find video and music by name or link, check each match, download. For Windows, m
 
 ## What it does
 
-- **Video, your way.** Links from YouTube and over a thousand other sites, whole playlists and channels, up to 8K. Each card can have its own quality, or take only a part of a video, and subtitles include automatic ones.
+- **Video, your way.** Links from YouTube and over a thousand other sites, whole playlists and channels, up to 8K. Each card can have its own quality, and subtitles include automatic ones.
 - **Names work like links.** Paste `1. Artist - Song` lines, numbered or not, and each one is found for you. A list of 1,500 is fine.
 - **Bring a list from anywhere.** Any table with names in it works, from any service or script: you see how it was understood before anything is searched. Exports from Exportify, TuneMyMusic and Soundiiz, Spotify account data, Apple Music and M3U need not even that. No login to any of them, and playlists come along as playlist files.
 - **It points at what to check.** A wrong song is the real risk in a long list. Cards whose length or title do not fit, or whose name several artists share, are marked and collected under one filter, with other versions a click away.
@@ -17,7 +17,8 @@ Find video and music by name or link, check each match, download. For Windows, m
 - **Made for long lists.** Filters, search within the queue, retry of everything that failed. The queue survives closing the app. Searching is deliberately unhurried and pauses by itself if a site asks.
 - **Far more than YouTube.** SoundCloud, Vimeo, TikTok, Twitch, Bandcamp, and [everything else yt-dlp supports](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md): paste a link, nothing to configure.
 - **Your browser's sign-ins.** For age-restricted and private videos it uses the browser you already use. There is no account to create, and your passwords never touch the app.
-- **Small things that add up.** Lyrics next to each song, only a part of a video, playlists that stay up to date, the original soundtrack on dubbed videos, and no second copy of what you already have.
+- **Only the part you want.** Thirty seconds from a twelve-hour stream download as thirty seconds, not twelve hours. Find the moment by its frames, or paste a link with a time in it.
+- **Small things that add up.** Lyrics next to each song, playlists that stay up to date, the original soundtrack on dubbed videos, and no second copy of what you already have.
 - **AI assistants can use it.** A built-in [MCP](https://modelcontextprotocol.io/) server lets models search, download, read transcripts and look at video frames.
 
 | | |
@@ -65,7 +66,7 @@ A zip or a whole folder works too. The ISRC and length in the file help to find 
 
 ### Also useful
 
-A card's format chip chooses audio or a video quality for that card alone. Its **⋯** menu has **Only a part of it** and **Follow this playlist**: a followed playlist is checked once a day and its new videos download by themselves. <kbd>Ctrl</kbd>+click, <kbd>Shift</kbd>+click or <kbd>Ctrl</kbd>+<kbd>A</kbd> selects several cards, and an action on one then applies to all of them. **Lyrics** in the audio options saves a text file next to each song; the song's name goes to [LRCLIB](https://lrclib.net/) to find it. **Settings** has the rest, such as clean file names without the video's id.
+A card's format chip chooses audio or a video quality for that card alone. Its **Part** chip picks a stretch of the video on a strip of its frames, and downloads only that; a link with `t=` in it starts there. Its **⋯** menu has **Follow this playlist**: a followed playlist is checked once a day and its new videos download by themselves. <kbd>Ctrl</kbd>+click, <kbd>Shift</kbd>+click or <kbd>Ctrl</kbd>+<kbd>A</kbd> selects several cards, and an action on one then applies to all of them. **Lyrics** in the audio options saves a text file next to each song; the song's name goes to [LRCLIB](https://lrclib.net/) to find it. **Settings** has the rest, such as clean file names without the video's id.
 
 ### Signing in
 

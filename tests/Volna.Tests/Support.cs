@@ -108,6 +108,8 @@ public sealed class FakeBackend : IQueueBackend
     }
 
     public Task<byte[]?> ThumbnailAsync(string url, string proxy) => Task.FromResult<byte[]?>(null);
+
+    public Task<(Storyboard? Detail, Storyboard? Overview)> StoryboardAsync(string url, string proxy, ProcessRunner runner) => Task.FromResult<(Storyboard?, Storyboard?)>((null, null));
 }
 
 public sealed class TestRoom : IDisposable

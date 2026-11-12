@@ -137,7 +137,25 @@ public partial class MainWindow : Window
         if (OperatingSystem.IsLinux()) return;
         ExtendClientAreaToDecorationsHint = true;
         ExtendClientAreaTitleBarHeightHint = -1;
-        TitleBar.Margin = new Thickness(OperatingSystem.IsMacOS() ? 84 : 20, 10, 20 + (OperatingSystem.IsWindows() ? 140 : 0), 8);
+        FitTitleBar();
+    }
+
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == WindowDecorationMarginProperty) FitTitleBar();
+    }
+
+    // The window's own buttons take a strip as tall as the system makes it. The app's title bar becomes that strip,
+    // with its buttons centred on the same line, rather than a taller row that starts beside them and ends below.
+    void FitTitleBar()
+    {
+        double strip = WindowDecorationMargin.Top;
+        bool inStrip = strip > 0 && ExtendClientAreaToDecorationsHint;
+        TitleBar.Classes.Set("strip", inStrip);
+        TitleBar.Height = inStrip ? strip : double.NaN;
+        // On Windows three buttons of 46 each sit at the right; on macOS three small ones at the left.
+        TitleBar.Margin = inStrip ? new Thickness(OperatingSystem.IsMacOS() ? 80 : 20, 0, OperatingSystem.IsWindows() ? 146 : 12, 6) : new Thickness(20, 10, 20, 8);
     }
 
     void LoadPreferences()
@@ -303,9 +321,9 @@ public partial class MainWindow : Window
             case "import": _ = ImportFilesAsync(); return;
             case "checkFollowed": Queue.CheckFollowed(true); return;
             case "openRelease": TryOpen("https://github.com/" + AppUpdate.Repository + "/releases/latest"); return;
-            case "clipSet": ApplyClip(ClipFrom.Text, ClipTo.Text); return;
-            case "clipClear": ApplyClip(null, null); return;
-            case "clipClose": ClipOverlay.IsVisible = false; return;
+            case "clipSet": ApplyClip(); return;
+            case "clipClear": ClearClip(); return;
+            case "clipClose": CloseClip(); return;
             case "start": prefs.Folder = (FolderBox.Text ?? "").Trim(); Queue.StartAll(); return;
             case "stop": Queue.StopAll(); return;
             case "update": _ = UpdateYtDlpAsync(false); return;
@@ -359,6 +377,11 @@ public partial class MainWindow : Window
             case "retryFailed": Queue.RetryFailed(); return;
             case "allVideo": Queue.SetAllModes(false); return;
             case "allAudio": Queue.SetAllModes(true); return;
+        }
+        if (command.StartsWith("clip", StringComparison.Ordinal) && command.Contains(':', StringComparison.Ordinal))
+        {
+            ClipCommand(command);
+            return;
         }
         if (item == null) return;
         if (command.StartsWith("quality:", StringComparison.Ordinal))
@@ -448,7 +471,7 @@ public partial class MainWindow : Window
             if (PickerOverlay.IsVisible) { ClosePicker(); e.Handled = true; }
             else if (AuthOverlay.IsVisible) { CloseAuth(); e.Handled = true; }
             else if (CloseOverlay.IsVisible) { CloseOverlay.IsVisible = false; e.Handled = true; }
-            else if (ClipOverlay.IsVisible) { ClipOverlay.IsVisible = false; e.Handled = true; }
+            else if (ClipOverlay.IsVisible) { CloseClip(); e.Handled = true; }
             else if (SettingsOverlay.IsVisible) { SettingsOverlay.IsVisible = false; e.Handled = true; }
             else if (ImportOverlay.IsVisible) { ImportOverlay.IsVisible = false; importTable = null; e.Handled = true; }
             else if (LogPanel.IsVisible) { ToggleLog(); e.Handled = true; }
@@ -1061,27 +1084,6 @@ public partial class MainWindow : Window
         candidates.Clear();
     }
 
-    // ---------- A part of a video ----------
-
-    void OpenClip(QueueItem item)
-    {
-        string[] ends = (item.Section ?? "").Split('-');
-        clipTarget = item;
-        ClipFrom.Text = ends.Length == 2 ? Format.Duration(double.Parse(ends[0], CultureInfo.InvariantCulture)) : "";
-        ClipTo.Text = ends.Length == 2 ? Format.Duration(double.Parse(ends[1], CultureInfo.InvariantCulture)) : "";
-        ClipTo.PlaceholderText = item.Duration;
-        ClipOverlay.IsVisible = true;
-        ClipFrom.Focus();
-    }
-
-    void ApplyClip(string? from, string? to)
-    {
-        if (clipTarget == null) return;
-        if (!Queue.SetSection(clipTarget, from, to)) { ShowToast(Loc.T("toast.clip.bad"), ToastKind.Warning); return; }
-        ClipOverlay.IsVisible = false;
-        clipTarget = null;
-    }
-
     // ---------- Sign-in ----------
 
     void UpdateAccount()
@@ -1215,6 +1217,7 @@ public partial class MainWindow : Window
             return;
         }
         pickerRunner?.Cancel();
+        clipRunner?.Cancel();
         signInCancel?.Cancel();
         setupCancel?.Cancel();
         signInCancel?.Dispose();

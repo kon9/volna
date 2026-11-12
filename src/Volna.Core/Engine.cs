@@ -190,6 +190,40 @@ public static partial class Engine
         return args;
     }
 
+    /// <summary>
+    /// Only the list of formats, where YouTube keeps its preview frames. Those need none of the work that playing the
+    /// video needs, so the player's script is skipped, and a video with nothing to download still gives its frames.
+    /// </summary>
+    public static List<string> StoryboardArgs(string url, IEnumerable<string> auth, string proxy)
+    {
+        var args = CommonArgs(auth, proxy);
+        args.AddRange(new[] { "--skip-download", "--no-playlist", "--ignore-no-formats-error", "--no-warnings",
+            "--extractor-args", "youtube:player_skip=js",
+            "--print", "%(formats.:.{format_id,width,height,rows,columns,fps,fragments})j", "--", url });
+        return args;
+    }
+
+    /// <summary>Where a link asks the video to start, as in youtu.be/abc?t=95 or watch?v=abc&amp;t=1h2m5s.</summary>
+    public static double? StartOf(string? url)
+    {
+        if (url == null || !Uri.TryCreate(url, UriKind.Absolute, out Uri? uri)) return null;
+        foreach (string pair in (uri.Query.TrimStart('?') + "&" + uri.Fragment.TrimStart('#')).Split('&'))
+        {
+            string[] parts = pair.Split('=', 2);
+            if (parts.Length != 2 || parts[0] is not ("t" or "start" or "time_continue")) continue;
+            var match = TimeParam().Match(parts[1]);
+            if (!match.Success || match.Length == 0) continue;
+            double seconds = 0;
+            foreach (var (group, scale) in new[] { ("h", 3600), ("m", 60), ("s", 1) })
+                if (match.Groups[group].Success) seconds += scale * double.Parse(match.Groups[group].Value, CultureInfo.InvariantCulture);
+            if (seconds > 0) return seconds;
+        }
+        return null;
+    }
+
+    [GeneratedRegex(@"^(?:(?<h>\d+)h)?(?:(?<m>\d+)m)?(?:(?<s>\d+(?:\.\d+)?)s?)?$")]
+    private static partial Regex TimeParam();
+
     public const string ProgressTemplate = "download:__PROGRESS__%(progress.status)s|%(progress.downloaded_bytes)s|%(progress.total_bytes)s|%(progress.total_bytes_estimate)s|%(progress.speed)s|%(progress.eta)s|%(info.vcodec)s|%(info.acodec)s";
 
     // A part of a video has its own name, so it is never mistaken for the whole file.

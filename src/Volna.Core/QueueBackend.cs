@@ -12,6 +12,8 @@ public interface IQueueBackend
     Task<List<Dictionary<string, object?>>> SearchMusicAsync(string query, int limit, string proxy);
     Task<RunResult> DownloadAsync(DownloadOptions options, ProcessRunner runner, Action<string> onLine);
     Task<byte[]?> ThumbnailAsync(string url, string proxy);
+    /// <summary>The preview frames of a video, for choosing a part of it. Null where the site has none.</summary>
+    Task<(Storyboard? Detail, Storyboard? Overview)> StoryboardAsync(string url, string proxy, ProcessRunner runner);
     Task<ToolUpdate> UpdateToolAsync(string proxy, bool nightly, Action<string> log);
     Task<string?> LyricsAsync(string artist, string title, double? seconds, string proxy);
 }
@@ -63,6 +65,26 @@ public sealed class YtDlpBackend : IQueueBackend
     }
 
     public Task<ToolUpdate> UpdateToolAsync(string proxy, bool nightly, Action<string> log) => ToolManager.UpdateYtDlpAsync(proxy, nightly, log);
+
+    public async Task<(Storyboard? Detail, Storyboard? Overview)> StoryboardAsync(string url, string proxy, ProcessRunner runner)
+    {
+        var lease = Auth.Lease();
+        RunResult? result = null;
+        List<object?>? formats = null;
+        try
+        {
+            result = await runner.RunAsync(ToolManager.YtDlp, Engine.StoryboardArgs(url, lease.Args, proxy), line =>
+            {
+                if (line.StartsWith('[') && line.EndsWith(']'))
+                {
+                    try { formats = Json.Parse(line) as List<object?>; }
+                    catch (System.Text.Json.JsonException) { }
+                }
+            });
+        }
+        finally { lease.Complete(result is { ExitCode: 0, Cancelled: false }); }
+        return formats == null ? (null, null) : Storyboard.FromFormats(formats.OfType<Dictionary<string, object?>>());
+    }
 
     public Task<string?> LyricsAsync(string artist, string title, double? seconds, string proxy) => Lyrics.FindAsync(artist, title, seconds, proxy);
 

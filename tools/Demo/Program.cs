@@ -111,6 +111,8 @@ sealed class DemoBackend : IQueueBackend
         }
     }
 
+    public Task<(Storyboard? Detail, Storyboard? Overview)> StoryboardAsync(string url, string proxy, ProcessRunner runner) => Task.FromResult<(Storyboard?, Storyboard?)>((null, null));
+
     static readonly HttpClient Covers = new() { Timeout = TimeSpan.FromSeconds(10) };
     static readonly Dictionary<string, byte[]> Fetched = new();
 
