@@ -260,7 +260,7 @@ public static partial class Engine
             args.AddRange(new[] { "--format", "bv*" + limit + "+ba/b" + limit,
                 "--format-sort", "lang,res,vcodec:h264,acodec:aac", "--merge-output-format", o.Container, "--remux-video", o.Container });
             // --ignore-errors: subtitles refused by the site must not cost the video itself.
-            if (o.Subtitles) args.AddRange(new[] { "--write-subs", "--write-auto-subs", "--sub-langs", SubtitleLanguages(Loc.Language), "--embed-subs", "--ignore-errors" });
+            if (o.Subtitles) args.AddRange(new[] { "--write-subs", "--write-auto-subs", "--sub-langs", SubtitleLanguages(Loc.SystemLanguage(), Loc.Language), "--embed-subs", "--ignore-errors" });
         }
         if (o.EmbedThumbnail) args.AddRange(["--embed-thumbnail", "--convert-thumbnails", "jpg"]);
         var cuts = new List<string>();
@@ -275,8 +275,12 @@ public static partial class Engine
         return args;
     }
 
-    /// <summary>Subtitles in the language of the interface, and in English. "-orig" is a second copy of automatic ones.</summary>
-    public static string SubtitleLanguages(string language) => (language == "en" ? "en.*" : language + ".*,en.*") + ",-.*-orig";
+    /// <summary>
+    /// Subtitles in the system's language, whatever it is, in the interface's if that differs, and in English.
+    /// "-orig" is a second copy of automatic ones.
+    /// </summary>
+    public static string SubtitleLanguages(params string[] languages) =>
+        string.Join(",", languages.Append("en").Where(l => l.Length >= 2 && l.All(char.IsAsciiLetterLower)).Distinct().Select(l => l + ".*")) + ",-.*-orig";
 
     /// <summary>The playlist a link to one of its videos was opened from. YouTube's endless mixes do not count.</summary>
     public static string? PlaylistOf(string url)
@@ -475,6 +479,9 @@ public static partial class MusicSearch
         return node;
     }
 
+    static readonly HashSet<string> ArtistJoiners = new(StringComparer.OrdinalIgnoreCase)
+        { ",", "&", "、", "and", "и", "і", "y", "e", "et", "und", "i", "ve", "dan", "và", "와", "및", "と", "和", "x" };
+
     static Dictionary<string, object?>? ParseSong(Dictionary<string, object?>? item)
     {
         if (item == null) return null;
@@ -500,8 +507,8 @@ public static partial class MusicSearch
             }
             string? page = Dig(run, "navigationEndpoint", "browseEndpoint", "browseEndpointContextSupportedConfigs", "browseEndpointContextMusicConfig", "pageType") as string;
             if (page == "MUSIC_PAGE_TYPE_ALBUM") { album = text; continue; }
-            // Words between artists come as plain runs, in the language of the reply ("и", "&", ",").
-            if (artistSection && text.Length > 0 && Dig(run, "navigationEndpoint") == null && text is "," or "&" or "и" or "and") continue;
+            // Words between artists come as plain runs, in the language of the reply ("&", ",", "and", "y", "und").
+            if (artistSection && text.Length > 0 && Dig(run, "navigationEndpoint") == null && ArtistJoiners.Contains(text)) continue;
             if (artistSection && text.Length > 0) artists.Add(text);
         }
         var song = Json.Map(("id", id), ("title", title), ("webpage_url", "https://www.youtube.com/watch?v=" + id),

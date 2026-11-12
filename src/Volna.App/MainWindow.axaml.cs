@@ -24,7 +24,7 @@ public partial class MainWindow : Window
     static readonly int[] Heights = { 0, 2160, 1440, 1080, 720, 480, 360 };
     static readonly string[] AudioFormats = { "mp3", "m4a", "best" };
     static readonly string[] Themes = { "dark", "light", "system" };
-    static readonly string[] Languages = { "auto", "en", "ru" };
+    static readonly string[] Languages = new[] { "auto" }.Concat(Loc.Languages).ToArray();
     const string SignInPage = "https://accounts.google.com/ServiceLogin?service=youtube&uilel=3&passive=true&continue=https%3A%2F%2Fwww.youtube.com%2Fsignin%3Faction_handle_signin%3Dtrue%26app%3Ddesktop%26next%3D%252F";
 
     readonly IQueueBackend backend;
@@ -184,6 +184,7 @@ public partial class MainWindow : Window
         SkipDoneBox.IsChecked = prefs.SkipDownloaded;
         CleanNamesBox.IsChecked = prefs.CleanNames;
         ThemeBox.SelectedIndex = Math.Max(0, Array.IndexOf(Themes, prefs.Theme));
+        LanguageBox.ItemsSource = Languages.Select(l => l == "auto" ? Loc.T("settings.language.auto") : Loc.NativeName(l)).ToList();
         LanguageBox.SelectedIndex = Math.Max(0, Array.IndexOf(Languages, prefs.Language));
         ApplyTheme();
         if (prefs.WindowWidth >= MinWidth && prefs.WindowHeight >= MinHeight) { Width = prefs.WindowWidth; Height = prefs.WindowHeight; }

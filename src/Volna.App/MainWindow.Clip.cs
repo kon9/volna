@@ -56,7 +56,7 @@ public partial class MainWindow
         ClipPreviewBox.Height = Math.Clamp(Bounds.Height - ClipDialog.Margin.Top - ClipDialog.Margin.Bottom - 2 - rest, 120, 333);
     }
 
-    void OpenClip(QueueItem item)
+    public void OpenClip(QueueItem item)
     {
         if (!item.ShowClip || item.Info.Num("duration") is not { } duration) return;
         if (!clipWired) WireClip();

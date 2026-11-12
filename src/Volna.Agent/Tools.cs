@@ -121,8 +121,9 @@ static class Tools
     public static async Task<ToolResult?> WaitForToolsAsync()
     {
         if (toolInstall == null) return null;
-        if (!WaitForever) await Task.WhenAny(toolInstall, Task.Delay(TimeSpan.FromSeconds(50))).ConfigureAwait(false);
-        else await Task.WhenAny(toolInstall).ConfigureAwait(false);
+        // Only waiting here: whether the install worked is read from the task below.
+        try { await toolInstall.WaitAsync(WaitForever ? Timeout.InfiniteTimeSpan : TimeSpan.FromSeconds(50)).ConfigureAwait(false); }
+        catch (Exception ex) when (ex is not OutOfMemoryException) { }
         if (!toolInstall.IsCompleted) return ToolResult.Error("The tools are still being installed on first use, which takes a few minutes. Try again in a minute.");
         if (toolInstall.IsFaulted) return ToolResult.Error("The tools could not be installed: " + toolInstall.Exception?.GetBaseException().Message);
         return null;
@@ -437,7 +438,8 @@ static class Tools
         // Most MCP clients give up on a call after about a minute, so a longer wait must be split into polls.
         double limit = WaitForever ? 7 * 24 * 3600 : Math.Clamp(seconds, 0, 55);
         if (limit <= 0) return;
-        await Task.WhenAny(Task.WhenAll(list.Select(j => j.Finished.Task)), Task.Delay(TimeSpan.FromSeconds(limit))).ConfigureAwait(false);
+        try { await Task.WhenAll(list.Select(j => j.Finished.Task)).WaitAsync(TimeSpan.FromSeconds(limit)).ConfigureAwait(false); }
+        catch (Exception ex) when (ex is not OutOfMemoryException) { } // a job's own failure is reported by the job
     }
 
     static async Task RunJobAsync(AgentJob job)

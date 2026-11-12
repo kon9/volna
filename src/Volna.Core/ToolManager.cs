@@ -102,8 +102,8 @@ public static class ToolManager
             {
                 Task<RunResult> run = runner.RunAsync(own, [flag], _ => { });
                 // A slow start is not a broken tool.
-                if (await Task.WhenAny(run, Task.Delay(TimeSpan.FromSeconds(30))).ConfigureAwait(false) != run) { runner.Cancel(); return false; }
-                works = (await run.ConfigureAwait(false)).ExitCode == 0;
+                try { works = (await run.WaitAsync(TimeSpan.FromSeconds(30)).ConfigureAwait(false)).ExitCode == 0; }
+                catch (TimeoutException) { runner.Cancel(); return false; }
             }
             catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException or IOException or UnauthorizedAccessException) { works = false; }
             if (works) return false;

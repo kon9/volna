@@ -77,9 +77,36 @@ public class EngineTests
     }
 
     [Theory]
-    [InlineData("en", "en.*,-.*-orig")]
-    [InlineData("ru", "ru.*,en.*,-.*-orig")]
-    public void Subtitles_follow_the_interface_language(string language, string expected) => Assert.Equal(expected, Engine.SubtitleLanguages(language));
+    [InlineData("en", "en", "en.*,-.*-orig")]
+    [InlineData("ru", "ru", "ru.*,en.*,-.*-orig")]
+    [InlineData("ja", "en", "ja.*,en.*,-.*-orig")]     // a system language the interface has no table for still gets its subtitles
+    [InlineData("de", "fr", "de.*,fr.*,en.*,-.*-orig")]
+    [InlineData("iv", "en", "iv.*,en.*,-.*-orig")]
+    public void Subtitles_follow_the_system_language(string system, string shown, string expected) => Assert.Equal(expected, Engine.SubtitleLanguages(system, shown));
+
+    [Fact]
+    public void Views_in_East_Asian_languages_count_in_ten_thousands()
+    {
+        Loc.Use("ja");
+        try
+        {
+            Assert.Equal("1.2万回視聴", Format.Views(12_345));
+            Assert.Equal("3.4億回視聴", Format.Views(340_000_000));
+            Assert.Equal("950回視聴", Format.Views(950));
+        }
+        finally { Loc.Use("en"); }
+    }
+
+    [Theory]
+    [InlineData("en", 1, "views.one")]
+    [InlineData("en", 21, "views.many")]
+    [InlineData("ru", 21, "views.one")]
+    [InlineData("ru", 3, "views.few")]
+    [InlineData("ru", 12, "views.many")]
+    [InlineData("pl", 21, "views.many")]
+    [InlineData("pl", 22, "views.few")]
+    [InlineData("ja", 1, "views.one")]
+    public void Counts_take_the_form_their_language_wants(string language, long n, string expected) => Assert.Equal(expected, Format.PluralKey("views", n, language));
 
     // ---------- Moving a library ----------
 
@@ -623,13 +650,36 @@ public class EngineTests
     }
 
     [Fact]
-    public void Both_languages_have_the_same_strings()
+    public void Every_language_has_the_same_strings()
     {
         var en = Loc.Keys("en").ToHashSet();
-        var ru = Loc.Keys("ru").ToHashSet();
         Assert.NotEmpty(en);
-        Assert.Empty(en.Except(ru));
-        Assert.Empty(ru.Except(en));
+        foreach (string language in Loc.Languages)
+        {
+            var other = Loc.Keys(language).ToHashSet();
+            Assert.True(en.SetEquals(other), language + ": missing " + string.Join(", ", en.Except(other)) + "; extra " + string.Join(", ", other.Except(en)));
+        }
+    }
+
+    [Fact]
+    public void Every_translation_keeps_the_placeholders()
+    {
+        var holes = new System.Text.RegularExpressions.Regex(@"\{\d+[^}]*\}");
+        var wrong = new List<string>();
+        foreach (string language in Loc.Languages)
+        {
+            Loc.Use(language);
+            foreach (string key in Loc.Keys("en"))
+            {
+                Loc.Use("en");
+                var expected = holes.Matches(Loc.T(key)).Select(m => m.Value).Order().ToList();
+                Loc.Use(language);
+                var found = holes.Matches(Loc.T(key)).Select(m => m.Value).Order().ToList();
+                if (!expected.SequenceEqual(found)) wrong.Add(language + " " + key);
+            }
+        }
+        Loc.Use("en");
+        Assert.Empty(wrong);
     }
 
     [Fact]

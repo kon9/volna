@@ -195,7 +195,18 @@ public static class Json
 public static class Loc
 {
     static readonly Dictionary<string, Dictionary<string, string>> Tables = new();
-    public static string[] Languages { get; } = { "en", "ru" };
+    // The languages most people use their computers in. Each has a table of the same strings under Strings/.
+    static readonly (string Code, string Name)[] Known =
+    {
+        ("en", "English"), ("es", "Español"), ("pt", "Português"), ("fr", "Français"), ("de", "Deutsch"), ("it", "Italiano"),
+        ("pl", "Polski"), ("tr", "Türkçe"), ("uk", "Українська"), ("ru", "Русский"), ("id", "Bahasa Indonesia"), ("vi", "Tiếng Việt"),
+        ("zh", "简体中文"), ("ja", "日本語"), ("ko", "한국어"),
+    };
+
+    public static string[] Languages { get; } = Known.Select(k => k.Code).ToArray();
+
+    /// <summary>A language's name in that language, as a list of languages shows it.</summary>
+    public static string NativeName(string code) => Known.FirstOrDefault(k => k.Code == code).Name ?? code;
     public static string Language { get; private set; } = "en";
 
     static Dictionary<string, string> Table(string language)
@@ -225,7 +236,7 @@ public static class Loc
     }
 
     // Without ICU the system's culture reads as invariant, and Linux says it in the environment anyway.
-    static string SystemLanguage()
+    public static string SystemLanguage()
     {
         string culture = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
         if (culture != "iv") return culture;
@@ -254,7 +265,8 @@ public static class Format
         culture.NumberFormat.NumberGroupSeparator = "\u00A0";
         return culture;
     }
-    static CultureInfo Culture => Loc.Language == "ru" ? Comma : CultureInfo.InvariantCulture;
+    static readonly HashSet<string> CommaLanguages = new(StringComparer.Ordinal) { "ru", "uk", "de", "fr", "es", "pt", "it", "pl", "tr", "id", "vi" };
+    static CultureInfo Culture => CommaLanguages.Contains(Loc.Language) ? Comma : CultureInfo.InvariantCulture;
 
     public static string Bytes(double bytes)
     {
@@ -276,13 +288,31 @@ public static class Format
 
     public static string Views(double views)
     {
+        // Chinese, Japanese and Korean count in ten thousands (万, 만) and hundred millions (亿, 億, 억).
+        if (Loc.Language is "zh" or "ja" or "ko")
+        {
+            if (views >= 1e8) return Loc.T("views.million", (views / 1e8).ToString(views >= 1e9 ? "0" : "0.#", Culture));
+            if (views >= 1e4) return Loc.T("views.thousand", (views / 1e4).ToString(views >= 1e5 ? "0" : "0.#", Culture));
+            return Loc.T("views.many", (long)views);
+        }
         if (views >= 1e9) return Loc.T("views.billion", (views / 1e9).ToString(views >= 1e10 ? "0" : "0.#", Culture));
         if (views >= 1e6) return Loc.T("views.million", (views / 1e6).ToString(views >= 1e7 ? "0" : "0.#", Culture));
         if (views >= 1e3) return Loc.T("views.thousand", (views / 1e3).ToString(views >= 1e4 ? "0" : "0.#", Culture));
         long n = (long)views;
-        if (Loc.Language != "ru") return Loc.T(n == 1 ? "views.one" : "views.many", n);
-        string key = n % 10 == 1 && n % 100 != 11 ? "views.one" : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? "views.few" : "views.many";
-        return Loc.T(key, n);
+        return Loc.T(PluralKey("views", n, Loc.Language), n);
+    }
+
+    /// <summary>Most languages have one form for one and another for the rest; Slavic ones also have a form for two to four.</summary>
+    public static string PluralKey(string stem, long n, string language)
+    {
+        bool fewish = n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14);
+        string form = language switch
+        {
+            "ru" or "uk" => n % 10 == 1 && n % 100 != 11 ? "one" : fewish ? "few" : "many",
+            "pl" => n == 1 ? "one" : fewish ? "few" : "many",
+            _ => n == 1 ? "one" : "many",
+        };
+        return stem + "." + form;
     }
 
     public static string QualityBadge(int height)

@@ -89,7 +89,7 @@
   "settings.cover": "Cover and tags",
   "settings.cover.hint": "The preview becomes the file's cover",
   "settings.subs": "Subtitles",
-  "settings.subs.hint": "English, including automatic ones",
+  "settings.subs.hint": "In your system's language and in English, automatic ones included",
   "settings.sponsor": "Cut sponsor segments",
   "settings.sponsor.hint": "SponsorBlock, YouTube only",
   "settings.autostart": "Download right away",

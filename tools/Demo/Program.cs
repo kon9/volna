@@ -5,6 +5,7 @@ using Avalonia.VisualTree;
 //   dotnet run --project tools/Demo -- smoke
 //   dotnet run --project tools/Demo -- pictures <folder>
 //   dotnet run --project tools/Demo -- frames <folder>      (then see tools/make-media.sh)
+//   dotnet run --project tools/Demo -- small <folder> [language]   the smallest window, to see that every text fits
 //   dotnet run --project tools/Demo -- live <folder> "Artist - Song" ...   real searches and downloads, for checking by hand
 using System.Globalization;
 using Avalonia;
@@ -231,7 +232,7 @@ static class Program
         {
             result = mode switch
             {
-                "small" => Small(output),
+                "small" => Small(output, args.Length > 2 ? args[2] : "ru"),
                 "acceptance" => Acceptance.Run(output, args.Skip(2).ToArray()),
                 "smoke" => Smoke(),
                 "pictures" => Pictures(output),
@@ -282,6 +283,18 @@ static class Program
 
     // Twice the size of the window, as a fine screen shows it: at one to one, text in the pictures looks soft on GitHub.
     const double Scale = 2;
+
+    /// <summary>Texts that do not fit where they are: cut short with an ellipsis, or wider than their place.</summary>
+    static IEnumerable<string> Overflowing(Visual root)
+    {
+        foreach (var text in root.GetVisualDescendants().OfType<TextBlock>())
+        {
+            if (!text.IsEffectivelyVisible || string.IsNullOrEmpty(text.Text) || text.Bounds.Width <= 0) continue;
+            bool cut = text.TextLayout.TextLines.Any(l => l.HasCollapsed);
+            bool wider = text.TextWrapping == Avalonia.Media.TextWrapping.NoWrap && text.DesiredSize.Width - text.Margin.Left - text.Margin.Right > text.Bounds.Width + 1;
+            if (cut || wider) yield return (cut ? "cut  " : "wide ") + text.Text.ReplaceLineEndings(" ");
+        }
+    }
 
     static void Save(MainWindow window, string path)
     {
@@ -398,26 +411,36 @@ static class Program
     }
 
     // The smallest window the app allows, for a small laptop at a high scale.
-    static int Small(string output)
+    static int Small(string output, string language)
     {
-        var (window, _) = Open("dark", "ru", 880, 540);
+        var (window, _) = Open("dark", language, 880, 540);
+        output = Path.Combine(output, language);
+        Directory.CreateDirectory(output);
+        var report = new List<string>();
+        void Check(string what, Visual root) => report.AddRange(Overflowing(root).Distinct().Select(t => what + ": " + t));
         window.Queue.Add(DemoBackend.List.Select(s => Engine.SearchPrefix + s));
         Settle(window, () => window.Queue.Items.All(i => i.State == ItemState.Ready && i.ThumbBytes != null));
         Save(window, Path.Combine(output, "small-queue.png"));
-        foreach (string overlay in new[] { "SettingsOverlay", "AuthOverlay", "PickerOverlay" })
+        Check("queue", window);
+        foreach (string overlay in new[] { "SettingsOverlay", "AuthOverlay", "PickerOverlay", "ClipOverlay" })
         {
             if (overlay == "AuthOverlay") window.OpenAuth();
+            else if (overlay == "ClipOverlay") window.OpenClip(window.Queue.Items[0]);
             else if (overlay == "PickerOverlay") { window.OpenPicker(window.Queue.Items[0]); Settle(window, () => false, 30); }
             else window.FindControl<Grid>(overlay)!.IsVisible = true;
             Pump(10);
             Save(window, Path.Combine(output, "small-" + overlay + ".png"));
+            Check(overlay, window.FindControl<Grid>(overlay)!);
             window.FindControl<Grid>(overlay)!.IsVisible = false;
         }
         window.OpenImport(LibraryImport.GuessTable("Pixelland;Kevin MacLeod;4:02\nCipher;Kevin MacLeod;3:52\nHorizons;Scott Buckley;4:54\nFilaments;Scott Buckley;5:40\nWe need a plan;Komiku;2:02\nThe end ?;Komiku;3:59\n")!);
         Pump(10);
         Save(window, Path.Combine(output, "small-ImportOverlay.png"));
+        Check("ImportOverlay", window.FindControl<Grid>("ImportOverlay")!);
         window.Close();
         Pump(3);
+        File.WriteAllLines(Path.Combine(output, "overflow.txt"), report);
+        foreach (string line in report) Console.WriteLine(language + " " + line);
         return 0;
     }
 
