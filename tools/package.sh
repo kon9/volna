@@ -20,10 +20,12 @@ NAME="Volna-$VERSION-$RID"
 STAGE="$OUT/$NAME"
 mkdir -p "$STAGE"
 cp LICENSE THIRD-PARTY-NOTICES.md "$STAGE/"
+cp -R packaging/licenses "$STAGE/licenses"
 
 case "$RID" in
   win-*)
     cp "$OUT/app/Volna.exe" "$OUT/agent/volna-agent.exe" "$STAGE/"
+    cp -R "$OUT/app/libvlc" "$STAGE/"
     # Windows tar decides the format by the extension, but the tar of Git Bash would write a tar under this name.
     (cd "$OUT" && powershell.exe -NoProfile -Command "Compress-Archive -Force -Path '$NAME' -DestinationPath '../../$NAME.zip'")
     ;;
@@ -39,6 +41,7 @@ case "$RID" in
     APP="$STAGE/Volna.app"
     mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
     cp "$OUT/app/Volna" "$OUT/agent/volna-agent" "$APP/Contents/MacOS/"
+    cp -R "$OUT/app/libvlc" "$APP/Contents/MacOS/"
     chmod +x "$APP/Contents/MacOS/Volna" "$APP/Contents/MacOS/volna-agent"
     cp assets/generated/icon.icns "$APP/Contents/Resources/icon.icns"
     sed "s/@VERSION@/$VERSION/g" packaging/macos/Info.plist > "$APP/Contents/Info.plist"

@@ -6,11 +6,14 @@ using Avalonia.VisualTree;
 //   dotnet run --project tools/Demo -- pictures <folder>
 //   dotnet run --project tools/Demo -- frames <folder>      (then see tools/make-media.sh)
 //   dotnet run --project tools/Demo -- small <folder> [language]   the smallest window, to see that every text fits
+//   dotnet run --project tools/Demo -- clips <folder>     offline clip-workspace interactions and screenshots
 //   dotnet run --project tools/Demo -- live <folder> "Artist - Song" ...   real searches and downloads, for checking by hand
 using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Volna.App;
 using Volna.Core;
@@ -27,6 +30,36 @@ sealed class DemoBackend : IQueueBackend
 
     public readonly List<ActiveDownload> Active = new();
     public string Folder = "";
+    public bool Offline;
+    public Func<Task<ClipMetadataInfo>>? OnClipMetadata;
+    public Func<CaptionTrack, Task<IReadOnlyList<SubtitleCue>>>? OnTranscript;
+
+    public const string ClipFixtureTitle = "Morning Journey — demo film";
+
+    public static ClipMetadataInfo ClipFixtureMetadata()
+    {
+        bool ru = Loc.Language == "ru";
+        return new ClipMetadataInfo(ru ? "ru" : "en", 600,
+            [new VideoChapter(0, 60, ru ? "Рассвет" : "Dawn"),
+             new VideoChapter(60, 150, ru ? "Через долину" : "Across the valley"),
+             new VideoChapter(150, 240, ru ? "У тихого озера" : "Beside the quiet lake"),
+             new VideoChapter(240, 600, ru ? "Дорога домой" : "The journey home")],
+            [new CaptionTrack("en", "English", false), new CaptionTrack("ru", "Русский", false)]);
+    }
+
+    public static IReadOnlyList<SubtitleCue> ClipFixtureCues(string language) => language == "ru"
+        ? [new SubtitleCue(12, 18, "Утренний свет освещает тихую долину."),
+           new SubtitleCue(75.2, 81.8, "Мы идём вдоль реки к зелёным холмам."),
+           new SubtitleCue(169, 176, "Тропа выходит к спокойному озеру.")]
+        : [new SubtitleCue(12, 18, "Morning light reaches the quiet valley."),
+           new SubtitleCue(75.2, 81.8, "We follow the river toward the green hills."),
+           new SubtitleCue(169, 176, "The path opens beside a still lake.")];
+
+    public Task<ClipMetadataInfo> ClipMetadataAsync(string url, string proxy, ProcessRunner runner) =>
+        OnClipMetadata?.Invoke() ?? Task.FromResult(ClipFixtureMetadata());
+
+    public Task<IReadOnlyList<SubtitleCue>> TranscriptAsync(string url, CaptionTrack track, string proxy, ProcessRunner runner) =>
+        OnTranscript?.Invoke(track) ?? Task.FromResult(ClipFixtureCues(track.Language));
 
     public sealed class ActiveDownload
     {
@@ -73,6 +106,13 @@ sealed class DemoBackend : IQueueBackend
         foreach (string request in requests)
         {
             string query = request[(request.IndexOf(':') + 1)..];
+            if (query == ClipFixtureTitle)
+            {
+                entries.Add(Json.Map(("id", "volna-demo-clip"), ("title", ClipFixtureTitle), ("uploader", "Volna Demo"),
+                    ("duration", 600.0), ("height", 720.0), ("webpage_url", "https://example.org/demo-film"),
+                    ("thumbnail", "https://example.org/demo-cover.jpg"), ("ie_key", "Generic"), ("extractor_key", "Generic")));
+                continue;
+            }
             int at = Array.FindIndex(Videos, v => v.Title == query);
             if (at < 0) continue;
             var v = Videos[at];
@@ -120,6 +160,7 @@ sealed class DemoBackend : IQueueBackend
     // The real cover, at the size a fine screen needs. Without a network the picture is drawn instead.
     public async Task<byte[]?> ThumbnailAsync(string url, string proxy)
     {
+        if (Offline) return Drawn(url);
         string? id = url.Contains("/vi/", StringComparison.Ordinal) ? url.Split("/vi/")[1].Split('/')[0] : null;
         if (id != null)
         {
@@ -233,6 +274,7 @@ static class Program
             result = mode switch
             {
                 "small" => Small(output, args.Length > 2 ? args[2] : "ru"),
+                "clips" => Clips(output),
                 "acceptance" => Acceptance.Run(output, args.Skip(2).ToArray()),
                 "smoke" => Smoke(),
                 "pictures" => Pictures(output),
@@ -240,7 +282,7 @@ static class Program
                 "live" => Live(output, args.Skip(2).ToArray()),
                 "install" => Install(),
                 "social" => Social(output),
-                _ => throw new ArgumentException("smoke, pictures or frames")
+                _ => throw new ArgumentException("smoke, clips, pictures or frames")
             };
         }
         catch (Exception ex) { failure = ex; }
@@ -442,6 +484,201 @@ static class Program
         File.WriteAllLines(Path.Combine(output, "overflow.txt"), report);
         foreach (string line in report) Console.WriteLine(language + " " + line);
         return 0;
+    }
+
+    // Drive the same controls as a person, without starting a media player or contacting a video site.
+    static readonly string[] ExpectedClipSections = ["70-100", "60-150", "150-240"];
+
+    static int Clips(string output)
+    {
+        var checks = new List<string>();
+        foreach (string language in new[] { "en", "ru" })
+            foreach (string theme in new[] { "dark", "light" })
+                foreach (var (width, height) in new[] { (1240, 820), (880, 540) })
+                {
+                    var (window, backend) = Open(theme, language, width, height, audio: false);
+                    backend.Offline = true;
+                    Required<TextBox>(window, "FolderBox").Text = backend.Folder;
+                    window.Queue.Add([Engine.SearchPrefix + DemoBackend.ClipFixtureTitle]);
+                    Settle(window, () => window.Queue.Items.Count == 1 && window.Queue.Items[0].State == ItemState.Ready && window.Queue.Items[0].ThumbBytes != null);
+                    Ensure(window.Queue.Items.Count == 1 && window.Queue.Items[0].State == ItemState.Ready, "The demo film did not become ready.");
+                    QueueItem item = window.Queue.Items[0];
+                    window.OpenClip(item);
+                    Pump(8);
+                    Ensure(Required<Grid>(window, "ClipOverlay").IsVisible, "The clip editor did not open.");
+
+                    // A named manual range joins two chapters in the same batch.
+                    TypeTime(window, "ClipFrom", "1:10");
+                    TypeTime(window, "ClipTo", "1:40");
+                    string firstName = language == "ru" ? "Заметки" : "Field notes";
+                    Required<TextBox>(window, "ClipName").Text = firstName;
+                    ClickTag(window, "clipAdd");
+                    Ensure(Rows<ClipDraft>(window, "ClipPartsList") is [{ Start: 70, End: 100 }], "The typed range did not reach the batch.");
+
+                    Required<RadioButton>(window, "ClipChaptersTab").IsChecked = true;
+                    Pump(8);
+                    var chapters = Rows<ClipChapterRow>(window, "ClipChaptersList");
+                    Ensure(chapters.Length == 4, "The chapter list is missing. Parts=" + Required<RadioButton>(window, "ClipPartsTab").IsChecked
+                        + ", chapters=" + Required<RadioButton>(window, "ClipChaptersTab").IsChecked + ", status=" + Required<TextBlock>(window, "ClipChaptersStatus").Text);
+                    var chapterButtons = Required<ItemsControl>(window, "ClipChaptersList").GetVisualDescendants().OfType<Button>().Where(b => Equals(b.Tag, "clipChapterPick")).ToArray();
+                    Ensure(chapterButtons.Length == 4, "The chapter buttons are missing.");
+                    Click(chapterButtons[1]);
+                    Ensure(Required<TextBox>(window, "ClipFrom").Text == "1:00" && Required<TextBox>(window, "ClipTo").Text == "2:30", "Selecting a chapter did not set its boundaries.");
+                    var boxes = Required<ItemsControl>(window, "ClipChaptersList").GetVisualDescendants().OfType<CheckBox>().ToArray();
+                    Ensure(boxes.Length == 4, "The chapter checkboxes are missing.");
+                    boxes[1].IsChecked = boxes[2].IsChecked = true;
+                    Pump(3);
+                    Ensure(chapters[1].Selected && chapters[2].Selected, "Chapter selection was not bound to the model.");
+                    ClickTag(window, "clipAddChapters");
+                    Ensure(Rows<ClipDraft>(window, "ClipPartsList").Length == 3, "Selected chapters were not added to the batch.");
+                    ClickTag(window, "clipClose");
+                    window.OpenClip(item);
+                    Pump(8);
+                    Ensure(Rows<ClipDraft>(window, "ClipPartsList").Length == 3, "Closing the editor lost its drafts.");
+
+                    string suffix = language + "-" + theme + "-" + width.ToString(CultureInfo.InvariantCulture) + "x" + height.ToString(CultureInfo.InvariantCulture);
+                    CaptureClipTab(window, "parts", suffix, output);
+                    Required<RadioButton>(window, "ClipChaptersTab").IsChecked = true;
+                    Pump(8);
+                    CaptureClipTab(window, "chapters", suffix, output);
+                    Required<RadioButton>(window, "ClipTranscriptTab").IsChecked = true;
+                    Pump(8);
+                    Ensure(Rows<ClipCueRow>(window, "ClipTranscriptList").Length == 3, "The transcript did not load.");
+                    var query = Required<TextBox>(window, "ClipTranscriptQuery");
+                    query.Text = language == "ru" ? "реки" : "river";
+                    Pump(5);
+                    Ensure(Rows<ClipCueRow>(window, "ClipTranscriptList").Length == 1, "Transcript search did not filter to the matching line.");
+                    ClickTag(window, "clipCuePick");
+                    Ensure(Required<TextBox>(window, "ClipFrom").Text == "1:15" && Required<TextBox>(window, "ClipTo").Text == "1:22", "A transcript result did not select the complete cue.");
+                    query.Text = "no-such-phrase-48931";
+                    Pump(5);
+                    Ensure(Rows<ClipCueRow>(window, "ClipTranscriptList").Length == 0, "A nonmatching search retained results.");
+                    Ensure(Required<TextBlock>(window, "ClipTranscriptStatus").Text == Loc.T("clip.search.empty"), "A nonmatching search lacks an empty state.");
+                    query.Text = language == "ru" ? "реки" : "river";
+                    Pump(5);
+                    CaptureClipTab(window, "transcript", suffix, output);
+
+                    Required<RadioButton>(window, "ClipPartsTab").IsChecked = true;
+                    Pump(3);
+                    ClickTag(window, "clipDownloadAll");
+                    Settle(window, () => backend.Active.Count == 3);
+                    Ensure(backend.Active.Count == 3, "Download all did not start the three clips.");
+                    Ensure(backend.Active.Select(a => a.Options.Section).SequenceEqual(ExpectedClipSections), "The batch did not preserve its intervals.");
+                    Ensure(backend.Active[0].Options.SectionName == firstName, "The named manual clip lost its name.");
+                    Ensure(backend.Active[1].Options.SectionName == chapters[1].Title && backend.Active[2].Options.SectionName == chapters[2].Title, "Chapter filenames lost their names.");
+                    Ensure(!Required<Grid>(window, "ClipOverlay").IsVisible, "The editor did not close after queuing its batch.");
+                    window.Queue.StopAll();
+                    foreach (var active in backend.Active) active.Done.TrySetResult(new RunResult(-1, true));
+                    Pump(8);
+                    window.Close();
+                    Pump(3);
+                    checks.Add(suffix + ": manual range, named batch, chapters, transcript hit/miss, cue boundaries, retained drafts, layout passed");
+                }
+        CheckStaleClipCallbacks();
+        checks.Add("Delayed metadata and transcripts from closed editors were ignored; empty transcript state passed.");
+        File.WriteAllLines(Path.Combine(output, "checks.txt"), checks);
+        Console.WriteLine("Clip workspace checks passed: " + checks.Count.ToString(CultureInfo.InvariantCulture) + " scenarios, 24 screenshots.");
+        return 0;
+    }
+
+    static void CheckStaleClipCallbacks()
+    {
+        var (window, backend) = Open("dark", "en", audio: false);
+        backend.Offline = true;
+        window.Queue.Add([Engine.SearchPrefix + DemoBackend.ClipFixtureTitle]);
+        Settle(window, () => window.Queue.Items.Count == 1 && window.Queue.Items[0].State == ItemState.Ready);
+        var item = window.Queue.Items[0];
+        var oldMetadata = new TaskCompletionSource<ClipMetadataInfo>();
+        backend.OnClipMetadata = () => oldMetadata.Task;
+        window.OpenClip(item);
+        Required<RadioButton>(window, "ClipChaptersTab").IsChecked = true;
+        Pump(3);
+        ClickTag(window, "clipClose");
+        backend.OnClipMetadata = null;
+        window.OpenClip(item);
+        Required<RadioButton>(window, "ClipChaptersTab").IsChecked = true;
+        Pump(8);
+        oldMetadata.SetResult(new ClipMetadataInfo("en", 600, [], []));
+        Pump(8);
+        Ensure(Rows<ClipChapterRow>(window, "ClipChaptersList").Length == 4, "Old metadata replaced the reopened editor's chapters.");
+
+        ClickTag(window, "clipClose");
+        var oldTranscript = new TaskCompletionSource<IReadOnlyList<SubtitleCue>>();
+        backend.OnTranscript = _ => oldTranscript.Task;
+        window.OpenClip(item);
+        Required<RadioButton>(window, "ClipTranscriptTab").IsChecked = true;
+        Pump(3);
+        ClickTag(window, "clipClose");
+        backend.OnTranscript = null;
+        window.OpenClip(item);
+        Required<RadioButton>(window, "ClipTranscriptTab").IsChecked = true;
+        Pump(8);
+        oldTranscript.SetResult([new SubtitleCue(0, 10, "Stale result")]);
+        Pump(8);
+        Ensure(Rows<ClipCueRow>(window, "ClipTranscriptList").Length == 3, "An old transcript replaced the reopened editor's captions.");
+
+        ClickTag(window, "clipClose");
+        backend.OnTranscript = _ => Task.FromResult<IReadOnlyList<SubtitleCue>>([]);
+        window.OpenClip(item);
+        Required<RadioButton>(window, "ClipTranscriptTab").IsChecked = true;
+        Pump(8);
+        Ensure(Rows<ClipCueRow>(window, "ClipTranscriptList").Length == 0, "An empty transcript kept old results.");
+        Ensure(Required<TextBlock>(window, "ClipTranscriptStatus").Text == Loc.T("clip.transcript.empty"), "An empty transcript kept showing a loading state.");
+        window.Close();
+        Pump(3);
+    }
+
+    static void CaptureClipTab(MainWindow window, string tab, string suffix, string output)
+    {
+        var dialog = Required<Border>(window, "ClipDialog");
+        Pump(8);
+        foreach (var control in dialog.GetVisualDescendants().OfType<Control>().Where(c => c.IsEffectivelyVisible && c is Button or TextBox or ComboBox or RadioButton))
+        {
+            if (control.TranslatePoint(default, dialog) is not { } at) continue;
+            Ensure(at.X >= -1 && at.X + control.Bounds.Width <= dialog.Bounds.Width + 1,
+                "Control runs outside the clip dialog: " + (control.Name ?? control.GetType().Name) + " (" + suffix + ", " + tab + ")");
+        }
+        var overflow = Overflowing(dialog).Where(s => !s.EndsWith(DemoBackend.ClipFixtureTitle, StringComparison.Ordinal)).Distinct().ToArray();
+        Ensure(overflow.Length == 0, "Clip text does not fit (" + suffix + ", " + tab + "): " + string.Join("; ", overflow));
+        if (window.Width < 1060)
+        {
+            var scroll = dialog.GetVisualDescendants().OfType<ScrollViewer>().First();
+            scroll.Offset = new Vector(0, scroll.Extent.Height);
+            Pump(8);
+        }
+        Save(window, Path.Combine(output, "clips-" + tab + "-" + suffix + ".png"));
+    }
+
+    static T Required<T>(MainWindow window, string name) where T : Control => window.FindControl<T>(name) ?? throw new InvalidOperationException("Missing control: " + name);
+
+    static T[] Rows<T>(MainWindow window, string name) => Required<ItemsControl>(window, name).ItemsSource?.Cast<T>().ToArray() ?? [];
+
+    static void ClickTag(MainWindow window, string tag)
+    {
+        var button = window.GetVisualDescendants().OfType<Button>().FirstOrDefault(b => b.IsEffectivelyVisible && Equals(b.Tag, tag));
+        if (button == null) throw new InvalidOperationException("Missing button: " + tag);
+        Click(button);
+    }
+
+    static void Click(Button button)
+    {
+        Ensure(button.IsEnabled, "A required button is disabled: " + button.Tag);
+        button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent, button));
+        Pump(4);
+    }
+
+    static void TypeTime(MainWindow window, string name, string value)
+    {
+        var box = Required<TextBox>(window, name);
+        box.Focus();
+        box.Text = value;
+        box.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Source = box, Key = Key.Enter });
+        Pump(3);
+    }
+
+    static void Ensure(bool condition, string message)
+    {
+        if (!condition) throw new InvalidOperationException(message);
     }
 
     static int Pictures(string output)

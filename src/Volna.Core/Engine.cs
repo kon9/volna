@@ -21,6 +21,7 @@ public sealed class DownloadOptions
     public string Proxy { get; set; } = "";
     public bool Overwrite { get; set; } // replace a file that is already there
     public string? Section { get; set; } // only this part of the video, in seconds: "90-120"
+    public string? SectionName { get; set; }
     public bool CleanNames { get; set; } // no id in the file's name
 }
 
@@ -231,7 +232,28 @@ public static partial class Engine
     static string OutputName(DownloadOptions o)
     {
         string id = o.Section != null ? " [%(id)s clip " + o.Section + "]" : o.CleanNames ? "" : " [%(id)s]";
-        return (o.Original ? "%(artist,creator,uploader).60B - %(track,title).90B" : "%(title).110B") + id + ".%(ext)s";
+        string title = CleanSectionName(o.SectionName) is { } name ? name.Replace("%", "%%", StringComparison.Ordinal)
+            : o.Original ? "%(artist,creator,uploader).60B - %(track,title).90B" : "%(title).110B";
+        return title + id + ".%(ext)s";
+    }
+
+    /// <summary>A literal name, safe on every supported filesystem. Percent signs are escaped only in the output template.</summary>
+    public static string? CleanSectionName(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return null;
+        var safe = new System.Text.StringBuilder();
+        int bytes = 0;
+        // Leave ample room for the video id and range even in a Windows filename; do not split a Unicode character.
+        foreach (var character in name.Trim().EnumerateRunes())
+        {
+            bool invalid = System.Text.Rune.IsControl(character) || character.IsAscii && "<>:\"/\\|?*".Contains((char)character.Value, StringComparison.Ordinal);
+            int size = invalid ? 1 : character.Utf8SequenceLength;
+            if (bytes + size > 100) break;
+            safe.Append(invalid ? "_" : character.ToString());
+            bytes += size;
+        }
+        string result = safe.ToString().Trim(' ', '.');
+        return result.Length == 0 ? null : result;
     }
 
     public static List<string> DownloadArgs(DownloadOptions o, IEnumerable<string> auth)

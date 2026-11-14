@@ -14,6 +14,9 @@ public interface IQueueBackend
     Task<byte[]?> ThumbnailAsync(string url, string proxy);
     /// <summary>The preview frames of a video, for choosing a part of it. Null where the site has none.</summary>
     Task<(Storyboard? Detail, Storyboard? Overview)> StoryboardAsync(string url, string proxy, ProcessRunner runner);
+    /// <summary>Loaded only when the chapter or transcript picker is opened.</summary>
+    Task<ClipMetadataInfo> ClipMetadataAsync(string url, string proxy, ProcessRunner runner) => ClipMetadata.LoadAsync(url, proxy, runner);
+    Task<IReadOnlyList<SubtitleCue>> TranscriptAsync(string url, CaptionTrack track, string proxy, ProcessRunner runner) => ClipMetadata.TranscriptAsync(url, track, proxy, runner);
     Task<ToolUpdate> UpdateToolAsync(string proxy, bool nightly, Action<string> log);
     Task<string?> LyricsAsync(string artist, string title, double? seconds, string proxy);
 }

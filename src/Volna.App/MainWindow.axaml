@@ -739,99 +739,198 @@
     <!-- A part of a video -->
     <Grid Name="ClipOverlay" Grid.RowSpan="4" IsVisible="False">
       <Border Background="{DynamicResource Scrim}"/>
-      <Border Name="ClipDialog" Classes="dialog" Width="640" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,16">
-        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-          <StackPanel Name="ClipContent" Margin="24,18,24,20">
-            <Grid ColumnDefinitions="Auto,*,Auto">
-              <Border Width="36" Height="36" CornerRadius="10" Background="{StaticResource AccentGradient}" VerticalAlignment="Center">
-                <TextBlock Classes="icon" Text="&#xe14e;" FontSize="17" Foreground="White" HorizontalAlignment="Center"/>
-              </Border>
-              <StackPanel Grid.Column="1" Margin="12,0,8,0" VerticalAlignment="Center">
-                <TextBlock Text="{l:Tr clip.title}" FontSize="17" FontWeight="SemiBold"/>
-                <TextBlock Text="{l:Tr clip.detail}" Classes="muted" FontSize="12.5" Margin="0,2,0,0" TextWrapping="Wrap"/>
-              </StackPanel>
-              <Button Grid.Column="2" Classes="icon" Tag="clipClose" Content="&#xe1b2;" ToolTip.Tip="{l:Tr picker.close}" VerticalAlignment="Top"/>
-            </Grid>
+      <Border Name="ClipDialog" Classes="dialog" Width="1060" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,16">
+        <Grid RowDefinitions="Auto,*">
+          <Grid ColumnDefinitions="Auto,*,Auto" Margin="24,18,24,0">
+            <Border Width="36" Height="36" CornerRadius="10" Background="{StaticResource AccentGradient}" VerticalAlignment="Center">
+              <TextBlock Classes="icon" Text="&#xe14e;" FontSize="17" Foreground="White" HorizontalAlignment="Center"/>
+            </Border>
+            <StackPanel Grid.Column="1" Margin="12,0,8,0" VerticalAlignment="Center">
+              <TextBlock Text="{l:Tr clip.title}" FontSize="17" FontWeight="SemiBold"/>
+              <TextBlock Text="{l:Tr clip.detail}" Classes="muted" FontSize="12.5" Margin="0,2,0,0" TextWrapping="Wrap"/>
+            </StackPanel>
+            <Button Grid.Column="2" Classes="icon" Tag="clipClose" Content="&#xe1b2;" ToolTip.Tip="{l:Tr picker.close}" VerticalAlignment="Top"/>
+          </Grid>
+          <ScrollViewer Name="ClipScroll" Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <StackPanel Name="ClipContent" Margin="24,0,24,20">
+              <Grid Name="ClipWorkspace" ColumnDefinitions="*,20,320" RowDefinitions="Auto,Auto">
+                <StackPanel Name="ClipEditor">
+                  <Border Name="ClipPreviewBox" Margin="0,14,0,0" Height="280" CornerRadius="12" ClipToBounds="True" Background="{DynamicResource Well}">
+                    <Panel>
+                      <Image Name="ClipPreview" Stretch="UniformToFill"/>
+                      <ContentControl Name="ClipPlaybackHost" IsVisible="False"/>
+                      <Border Name="ClipTitleOverlay" VerticalAlignment="Top" Padding="14,10,14,22" IsHitTestVisible="False">
+                        <Border.Background>
+                          <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                            <GradientStop Color="#A6000000" Offset="0"/>
+                            <GradientStop Color="#00000000" Offset="1"/>
+                          </LinearGradientBrush>
+                        </Border.Background>
+                        <Grid ColumnDefinitions="*,Auto">
+                          <TextBlock Name="ClipVideoTitle" Foreground="White" FontSize="13" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                          <StackPanel Name="ClipLoading" Grid.Column="1" Orientation="Horizontal" Spacing="8" Margin="12,0,0,0" IsVisible="False">
+                            <ProgressBar IsIndeterminate="True" Width="36" MinWidth="36" Height="3" VerticalAlignment="Center"/>
+                            <TextBlock Text="{l:Tr clip.loading}" FontSize="12" Foreground="#D9FFFFFF" VerticalAlignment="Center"/>
+                          </StackPanel>
+                        </Grid>
+                      </Border>
+                      <Border Name="ClipTimeOverlay" Background="#D9000000" CornerRadius="8" Padding="10,5" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="10" IsHitTestVisible="False">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                          <TextBlock Name="ClipPreviewLabel" FontSize="12" Foreground="#B3FFFFFF" VerticalAlignment="Center"/>
+                          <TextBlock Name="ClipPreviewTime" FontSize="13" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center"/>
+                        </StackPanel>
+                      </Border>
+                    </Panel>
+                  </Border>
 
-            <Border Name="ClipPreviewBox" Margin="0,14,0,0" Height="333" CornerRadius="12" ClipToBounds="True" Background="{DynamicResource Well}">
-              <Panel>
-                <Image Name="ClipPreview" Stretch="UniformToFill"/>
-                <Border VerticalAlignment="Top" Padding="14,10,14,22" IsHitTestVisible="False">
-                  <Border.Background>
-                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
-                      <GradientStop Color="#A6000000" Offset="0"/>
-                      <GradientStop Color="#00000000" Offset="1"/>
-                    </LinearGradientBrush>
-                  </Border.Background>
-                  <Grid ColumnDefinitions="*,Auto">
-                    <TextBlock Name="ClipVideoTitle" Foreground="White" FontSize="13" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
-                    <StackPanel Name="ClipLoading" Grid.Column="1" Orientation="Horizontal" Spacing="8" Margin="12,0,0,0" IsVisible="False">
-                      <ProgressBar IsIndeterminate="True" Width="36" MinWidth="36" Height="3" VerticalAlignment="Center"/>
-                      <TextBlock Text="{l:Tr clip.loading}" FontSize="12" Foreground="#D9FFFFFF" VerticalAlignment="Center"/>
+                  <Grid ColumnDefinitions="Auto,Auto,*,Auto" Margin="0,8,0,0">
+                    <Button Name="ClipPlayButton" Classes="chip" Tag="clipPlay" Content="{l:Tr clip.play}"/>
+                    <Button Name="ClipStopButton" Grid.Column="1" Classes="chip" Tag="clipStop" Content="{l:Tr clip.stop}" Margin="6,0,0,0" IsVisible="False"/>
+                    <TextBlock Name="ClipPlaybackStatus" Grid.Column="2" Classes="hint" VerticalAlignment="Center" Margin="10,0,4,0"/>
+                    <Button Name="ClipMuteButton" Grid.Column="3" Classes="chip" Tag="clipMute" Content="{l:Tr clip.mute}" IsVisible="False"/>
+                  </Grid>
+                  <Slider Name="ClipPlaybackSeek" Minimum="0" Maximum="120" IsVisible="False" Margin="0,3,0,0" ToolTip.Tip="{l:Tr clip.play}"/>
+
+                  <l:ClipTimeline Name="ClipOverview" Height="50" Margin="-8,12,-8,0"/>
+                  <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,3,0,0">
+                    <TextBlock Text="0:00" Classes="muted" FontSize="11"/>
+                    <TextBlock Name="ClipTotal" Grid.Column="2" Classes="muted" FontSize="11"/>
+                  </Grid>
+                  <StackPanel Name="ClipZoomPanel">
+                    <TextBlock Name="ClipZoomText" Classes="muted" FontSize="12" Margin="0,6,0,5"/>
+                    <l:ClipTimeline Name="ClipDetail" Height="42" Margin="-8,0"/>
+                  </StackPanel>
+
+                  <Grid ColumnDefinitions="Auto,14,Auto,*,Auto" Margin="0,14,0,0">
+                    <StackPanel>
+                      <TextBlock Text="{l:Tr clip.from}" Classes="field"/>
+                      <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Button Classes="step" Tag="clipStart:-1" Content="&#xe11c;" ToolTip.Tip="{l:Tr clip.minus}"/>
+                        <TextBox Name="ClipFrom" Width="86" HorizontalContentAlignment="Center" PlaceholderText="0:00"/>
+                        <Button Classes="step" Tag="clipStart:1" Content="&#xe13d;" ToolTip.Tip="{l:Tr clip.plus}"/>
+                      </StackPanel>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                      <TextBlock Text="{l:Tr clip.to}" Classes="field"/>
+                      <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Button Classes="step" Tag="clipEnd:-1" Content="&#xe11c;" ToolTip.Tip="{l:Tr clip.minus}"/>
+                        <TextBox Name="ClipTo" Width="86" HorizontalContentAlignment="Center"/>
+                        <Button Classes="step" Tag="clipEnd:1" Content="&#xe13d;" ToolTip.Tip="{l:Tr clip.plus}"/>
+                      </StackPanel>
+                    </StackPanel>
+                    <StackPanel Grid.Column="4" HorizontalAlignment="Right">
+                      <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,0,6" HorizontalAlignment="Right">
+                        <TextBlock Text="{l:Tr clip.length}" Classes="field" Margin="0"/>
+                        <TextBlock Name="ClipLength" FontSize="12.5" FontWeight="SemiBold"/>
+                      </StackPanel>
+                      <StackPanel Orientation="Horizontal" Spacing="5" Height="38">
+                        <Button Classes="chip length" Tag="clipLength:10" Content="{l:Tr clip.len10}"/>
+                        <Button Classes="chip length" Tag="clipLength:30" Content="{l:Tr clip.len30}"/>
+                        <Button Classes="chip length" Tag="clipLength:60" Content="{l:Tr clip.len60}"/>
+                        <Button Classes="chip length" Tag="clipLength:300" Content="{l:Tr clip.len300}"/>
+                      </StackPanel>
                     </StackPanel>
                   </Grid>
-                </Border>
-                <Border Background="#D9000000" CornerRadius="8" Padding="10,5" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="10" IsHitTestVisible="False">
-                  <StackPanel Orientation="Horizontal" Spacing="8">
-                    <TextBlock Name="ClipPreviewLabel" FontSize="12" Foreground="#B3FFFFFF" VerticalAlignment="Center"/>
-                    <TextBlock Name="ClipPreviewTime" FontSize="13" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center"/>
+
+                  <Grid ColumnDefinitions="*,Auto" Margin="0,14,0,0">
+                    <TextBox Name="ClipName" PlaceholderText="{l:Tr clip.name}" MaxLength="100"/>
+                    <Button Grid.Column="1" Tag="clipAdd" Content="{l:Tr clip.add}" Margin="8,0,0,0"/>
+                  </Grid>
+                  <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,14,0,0">
+                    <Button Classes="primary" Tag="clipSet">
+                      <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Classes="icon" Text="&#xe0b2;" FontSize="14"/>
+                        <TextBlock Text="{l:Tr clip.set}" VerticalAlignment="Center"/>
+                      </StackPanel>
+                    </Button>
+                    <Button Name="ClipWholeButton" Tag="clipClear" Content="{l:Tr clip.clear}"/>
                   </StackPanel>
+                </StackPanel>
+
+                <Border Name="ClipSide" Grid.Column="2" Background="{DynamicResource Well}" CornerRadius="12" Padding="12" Margin="0,14,0,0" Height="570" VerticalAlignment="Top">
+                  <Grid RowDefinitions="Auto,12,*">
+                    <Border Background="{DynamicResource Surface2}" CornerRadius="10" Padding="3">
+                      <UniformGrid Columns="3">
+                        <RadioButton Name="ClipPartsTab" Classes="segment" GroupName="ClipTab" IsChecked="True" Content="{l:Tr clip.parts}"/>
+                        <RadioButton Name="ClipChaptersTab" Classes="segment" GroupName="ClipTab" Content="{l:Tr clip.chapters}"/>
+                        <RadioButton Name="ClipTranscriptTab" Classes="segment" GroupName="ClipTab" Content="{l:Tr clip.transcript}"/>
+                      </UniformGrid>
+                    </Border>
+
+                    <Grid Name="ClipPartsPanel" Grid.Row="2" RowDefinitions="Auto,*,Auto">
+                      <TextBlock Text="{l:Tr clip.parts.hint}" Classes="hint" Margin="0,0,0,12"/>
+                      <Panel Grid.Row="1">
+                        <TextBlock Name="ClipPartsEmpty" Text="{l:Tr clip.parts.empty}" Classes="hint" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Margin="16"/>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                          <ItemsControl Name="ClipPartsList">
+                            <ItemsControl.ItemTemplate>
+                              <DataTemplate x:DataType="l:ClipDraft">
+                                <Border Background="{DynamicResource Surface}" CornerRadius="10" Padding="10" Margin="0,0,0,8">
+                                  <StackPanel Spacing="6">
+                                    <TextBox Text="{Binding Name, Mode=TwoWay}" PlaceholderText="{l:Tr clip.name}" MaxLength="100"/>
+                                    <Grid ColumnDefinitions="*,Auto">
+                                      <Button Tag="clipDraftPick" Classes="ghost" Content="{Binding RangeText}" HorizontalAlignment="Left"/>
+                                      <Button Grid.Column="1" Tag="clipDraftRemove" Classes="icon danger" Content="&#xe1b2;" Width="30" Height="30" ToolTip.Tip="{l:Tr clip.remove}"/>
+                                    </Grid>
+                                  </StackPanel>
+                                </Border>
+                              </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                          </ItemsControl>
+                        </ScrollViewer>
+                      </Panel>
+                      <Button Name="ClipDownloadAllButton" Grid.Row="2" Classes="primary" Tag="clipDownloadAll" Content="{l:Tr clip.download.all}" HorizontalAlignment="Stretch" IsEnabled="False" Margin="0,10,0,0"/>
+                    </Grid>
+
+                    <Grid Name="ClipChaptersPanel" Grid.Row="2" RowDefinitions="Auto,*,Auto" IsVisible="False">
+                      <TextBlock Name="ClipChaptersStatus" Classes="hint" Margin="0,0,0,10"/>
+                      <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <ItemsControl Name="ClipChaptersList">
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="l:ClipChapterRow">
+                              <Border Background="{DynamicResource Surface}" CornerRadius="10" Padding="8" Margin="0,0,0,8">
+                                <Grid ColumnDefinitions="Auto,*">
+                                  <CheckBox IsChecked="{Binding Selected, Mode=TwoWay}" VerticalAlignment="Center" MinWidth="28" ToolTip.Tip="{l:Tr clip.chapter.select}"/>
+                                  <Button Grid.Column="1" Tag="clipChapterPick" Classes="ghost" Height="NaN" MinHeight="48" HorizontalContentAlignment="Left" Padding="4">
+                                    <StackPanel Spacing="4">
+                                      <TextBlock Text="{Binding Title}" TextWrapping="Wrap"/>
+                                      <TextBlock Text="{Binding RangeText}" Classes="muted" FontSize="11.5"/>
+                                    </StackPanel>
+                                  </Button>
+                                </Grid>
+                              </Border>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </ScrollViewer>
+                      <Button Name="ClipAddChaptersButton" Grid.Row="2" Tag="clipAddChapters" Content="{l:Tr clip.chapters.add}" HorizontalAlignment="Stretch" IsEnabled="False" Margin="0,10,0,0"/>
+                    </Grid>
+
+                    <Grid Name="ClipTranscriptPanel" Grid.Row="2" RowDefinitions="Auto,Auto,Auto,*" IsVisible="False">
+                      <ComboBox Name="ClipCaptionLanguage" HorizontalAlignment="Stretch" DisplayMemberBinding="{Binding Label}" Margin="0,0,0,8" x:CompileBindings="False"/>
+                      <TextBox Name="ClipTranscriptQuery" Grid.Row="1" PlaceholderText="{l:Tr clip.search}"/>
+                      <TextBlock Name="ClipTranscriptStatus" Grid.Row="2" Classes="hint" Margin="0,8,0,8"/>
+                      <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <ItemsControl Name="ClipTranscriptList">
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="l:ClipCueRow">
+                              <Button Tag="clipCuePick" Classes="ghost" Height="NaN" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="8" Margin="0,0,0,6">
+                                <StackPanel Spacing="4">
+                                  <TextBlock Text="{Binding RangeText}" Foreground="{DynamicResource AccentText}" FontSize="11.5"/>
+                                  <TextBlock Text="{Binding Text}" TextWrapping="Wrap"/>
+                                </StackPanel>
+                              </Button>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </ScrollViewer>
+                    </Grid>
+                  </Grid>
                 </Border>
-              </Panel>
-            </Border>
-
-            <l:ClipTimeline Name="ClipOverview" Height="50" Margin="-8,12,-8,0"/>
-            <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,3,0,0">
-              <TextBlock Text="0:00" Classes="muted" FontSize="11"/>
-              <TextBlock Name="ClipTotal" Grid.Column="2" Classes="muted" FontSize="11"/>
-            </Grid>
-            <StackPanel Name="ClipZoomPanel">
-              <TextBlock Name="ClipZoomText" Classes="muted" FontSize="12" Margin="0,6,0,5"/>
-              <l:ClipTimeline Name="ClipDetail" Height="42" Margin="-8,0"/>
+              </Grid>
             </StackPanel>
-
-            <Grid ColumnDefinitions="Auto,14,Auto,*,Auto" Margin="0,14,0,0">
-              <StackPanel>
-                <TextBlock Text="{l:Tr clip.from}" Classes="field"/>
-                <StackPanel Orientation="Horizontal" Spacing="6">
-                  <Button Classes="step" Tag="clipStart:-1" Content="&#xe11c;" ToolTip.Tip="{l:Tr clip.minus}"/>
-                  <TextBox Name="ClipFrom" Width="86" HorizontalContentAlignment="Center" PlaceholderText="0:00"/>
-                  <Button Classes="step" Tag="clipStart:1" Content="&#xe13d;" ToolTip.Tip="{l:Tr clip.plus}"/>
-                </StackPanel>
-              </StackPanel>
-              <StackPanel Grid.Column="2">
-                <TextBlock Text="{l:Tr clip.to}" Classes="field"/>
-                <StackPanel Orientation="Horizontal" Spacing="6">
-                  <Button Classes="step" Tag="clipEnd:-1" Content="&#xe11c;" ToolTip.Tip="{l:Tr clip.minus}"/>
-                  <TextBox Name="ClipTo" Width="86" HorizontalContentAlignment="Center"/>
-                  <Button Classes="step" Tag="clipEnd:1" Content="&#xe13d;" ToolTip.Tip="{l:Tr clip.plus}"/>
-                </StackPanel>
-              </StackPanel>
-              <StackPanel Grid.Column="4" HorizontalAlignment="Right">
-                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,0,6" HorizontalAlignment="Right">
-                  <TextBlock Text="{l:Tr clip.length}" Classes="field" Margin="0"/>
-                  <TextBlock Name="ClipLength" FontSize="12.5" FontWeight="SemiBold"/>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Spacing="5" Height="38">
-                  <Button Classes="chip length" Tag="clipLength:10" Content="{l:Tr clip.len10}"/>
-                  <Button Classes="chip length" Tag="clipLength:30" Content="{l:Tr clip.len30}"/>
-                  <Button Classes="chip length" Tag="clipLength:60" Content="{l:Tr clip.len60}"/>
-                  <Button Classes="chip length" Tag="clipLength:300" Content="{l:Tr clip.len300}"/>
-                </StackPanel>
-              </StackPanel>
-            </Grid>
-
-            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,18,0,0">
-              <Button Classes="primary" Tag="clipSet">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                  <TextBlock Classes="icon" Text="&#xe0b2;" FontSize="14"/>
-                  <TextBlock Text="{l:Tr clip.set}" VerticalAlignment="Center"/>
-                </StackPanel>
-              </Button>
-              <Button Name="ClipWholeButton" Tag="clipClear" Content="{l:Tr clip.clear}"/>
-            </StackPanel>
-          </StackPanel>
-        </ScrollViewer>
+          </ScrollViewer>
+        </Grid>
       </Border>
     </Grid>
 
