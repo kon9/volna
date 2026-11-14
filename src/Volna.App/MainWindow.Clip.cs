@@ -32,6 +32,7 @@ public partial class MainWindow
     void WireClip()
     {
         clipWired = true;
+        WireClipWorkspace();
         ClipOverview.Range = ClipDetail.Range = clipRange;
         ClipOverview.Frames = ClipDetail.Frames = TrackFrame;
         clipRange.Changed += OnClipChanged;
@@ -51,9 +52,15 @@ public partial class MainWindow
     // The large frame gives way first on a short window, and the rest scrolls only when even that is not enough.
     void FitClipDialog()
     {
-        ClipContent.Measure(new Size(ClipDialog.Width, double.PositiveInfinity));
-        double rest = ClipContent.DesiredSize.Height - ClipPreviewBox.Height;
-        ClipPreviewBox.Height = Math.Clamp(Bounds.Height - ClipDialog.Margin.Top - ClipDialog.Margin.Bottom - 2 - rest, 120, 333);
+        bool wide = Bounds.Width >= 1060;
+        ClipDialog.Width = wide ? Math.Min(1100, Bounds.Width - 40) : Math.Min(640, Bounds.Width - 32);
+        ClipDialog.MaxHeight = Math.Max(300, Bounds.Height - 40);
+        ClipWorkspace.ColumnDefinitions[1].Width = new GridLength(wide ? 20 : 0);
+        ClipWorkspace.ColumnDefinitions[2].Width = new GridLength(wide ? 320 : 0);
+        Grid.SetColumn(ClipSide, wide ? 2 : 0);
+        Grid.SetRow(ClipSide, wide ? 0 : 1);
+        ClipPreviewBox.Height = Math.Clamp(Bounds.Height - 440, 150, 280);
+        ClipSide.Height = wide ? ClipPreviewBox.Height + 290 : 400;
     }
 
     public void OpenClip(QueueItem item)
@@ -62,6 +69,7 @@ public partial class MainWindow
         if (!clipWired) WireClip();
         CloseClip();
         clipTarget = item;
+        OpenClipWorkspace();
         double start = 0, end = Math.Min(duration, DefaultPart);
         string[] ends = (item.Section ?? "").Split('-');
         if (ends.Length == 2 && double.TryParse(ends[0], NumberStyles.Float, CultureInfo.InvariantCulture, out double from)
@@ -83,6 +91,7 @@ public partial class MainWindow
         ClipPreview.Source = clipThumb;
         ClipLoading.IsVisible = false;
         ClipOverlay.IsVisible = true;
+        ClipScroll.Offset = default;
         FitClipDialog();
         ShowClipPreview(true);
         if (IsYouTubeCard(item)) _ = LoadStoryboardAsync(item);
@@ -95,6 +104,7 @@ public partial class MainWindow
     {
         ClipOverlay.IsVisible = false;
         clipGeneration++;
+        CloseClipWorkspace();
         clipRunner?.Cancel();
         clipRunner = null;
         clipSettle.Stop();
@@ -183,6 +193,7 @@ public partial class MainWindow
 
     void OnClipChanged()
     {
+        StopClipPlayback();
         ClipFrom.Text = Format.Duration(clipRange.Start);
         ClipTo.Text = Format.Duration(clipRange.End);
         ClipLength.Text = Format.Duration(clipRange.Length);
@@ -324,7 +335,7 @@ public partial class MainWindow
         if (FocusManager?.GetFocusedElement() is TextBox box && (box == ClipFrom || box == ClipTo)) ApplyClipText(box);
         prefs.Folder = (FolderBox.Text ?? "").Trim();
         QueueItem target = clipTarget;
-        QueueItem? card = Queue.DownloadPart(target, clipRange.Start, clipRange.End);
+        QueueItem? card = Queue.DownloadPart(target, clipRange.Start, clipRange.End, ClipName.Text);
         if (card == null)
         {
             ShowToast(Loc.T("toast.clip.bad"), ToastKind.Warning);

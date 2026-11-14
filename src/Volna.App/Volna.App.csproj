@@ -6,6 +6,11 @@
     <ApplicationIcon>..\..\assets\generated\icon.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <VlcWindowsX86Enabled>false</VlcWindowsX86Enabled>
+    <VlcWindowsX64Enabled Condition="'$(RuntimeIdentifier)' != 'win-arm64'">true</VlcWindowsX64Enabled>
+    <VlcWindowsX64Enabled Condition="'$(RuntimeIdentifier)' == 'win-arm64'">false</VlcWindowsX64Enabled>
+    <VlcWindowsArm64Enabled Condition="'$(RuntimeIdentifier)' == 'win-arm64'">true</VlcWindowsArm64Enabled>
+    <VlcWindowsArm64Enabled Condition="'$(RuntimeIdentifier)' != 'win-arm64'">false</VlcWindowsArm64Enabled>
   </PropertyGroup>
   <ItemGroup>
     <AvaloniaResource Include="Assets\lucide.ttf" />
@@ -14,6 +19,21 @@
     <PackageReference Include="Avalonia.Desktop" Version="12.1.5" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.5" />
     <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.5" />
+    <PackageReference Include="LibVLCSharp.Avalonia" Version="3.10.2" />
+    <PackageReference Include="VideoLAN.LibVLC.Windows" Version="3.0.24" Condition="('$(RuntimeIdentifier)' == '' And $([MSBuild]::IsOSPlatform('Windows'))) Or $([System.String]::Copy('$(RuntimeIdentifier)').StartsWith('win-'))" />
+    <PackageReference Include="VideoLAN.LibVLC.Mac" Version="3.1.3.2" Condition="('$(RuntimeIdentifier)' == '' And $([MSBuild]::IsOSPlatform('OSX'))) Or $([System.String]::Copy('$(RuntimeIdentifier)').StartsWith('osx-'))" />
     <ProjectReference Include="..\Volna.Core\Volna.Core.csproj" />
   </ItemGroup>
+  <!-- Windows native libraries and plugin DLLs are extracted from the single-file bundle on first run. -->
+  <PropertyGroup Condition="'$(PublishSingleFile)' == 'true' And $([System.String]::Copy('$(RuntimeIdentifier)').StartsWith('win-'))">
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+  </PropertyGroup>
+  <!-- macOS keeps the signed VLC runtime inside the app bundle; Linux uses the system runtime. -->
+  <Target Name="KeepVlcRuntimeOutsideBundle" BeforeTargets="_ComputeFilesToBundle" Condition="!$([System.String]::Copy('$(RuntimeIdentifier)').StartsWith('win-'))">
+    <ItemGroup>
+      <ResolvedFileToPublish Update="@(ResolvedFileToPublish)" Condition="$([System.String]::Copy('%(ResolvedFileToPublish.RelativePath)').StartsWith('libvlc'))">
+        <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+  </Target>
 </Project>

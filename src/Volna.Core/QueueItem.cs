@@ -119,6 +119,7 @@ public sealed class QueueItem : INotifyPropertyChanged
     public string? Isrc { get; set; }
     public List<string> Lists { get; } = new();
     public string? Section { get; set; }
+    public string? SectionName { get; set; }
     public string? ReviewReason { get; set; }
     public bool ReviewDismissed { get; set; }
     public bool RepairTried { get; set; }
@@ -166,7 +167,7 @@ public sealed class QueueItem : INotifyPropertyChanged
     public bool HasSection => Section != null;
     /// <summary>A part can be chosen once the length is known; a finished card gives its further parts cards of their own.</summary>
     public bool ShowClip => Fetched && Info.Num("duration") is > 0 && Info.Str("live_status") != "is_live" && !IsActive && State != ItemState.Fetching;
-    public string ClipText => HasSection ? SectionText : Loc.T("card.clip");
+    public string ClipText => HasSection ? SectionName is { Length: > 0 } ? SectionName + " · " + SectionText : SectionText : Loc.T("card.clip");
     public string SectionText
     {
         get

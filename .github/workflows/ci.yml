@@ -42,6 +42,8 @@ jobs:
         run: dotnet test tests/Volna.Tests/Volna.Tests.csproj --nologo
       - name: The interface builds and renders
         run: dotnet run -c Release --project tools/Demo/Demo.csproj -- smoke
+      - name: Clip workspace flows and layouts
+        run: dotnet run --no-build -c Release --project tools/Demo/Demo.csproj -- clips "${{ runner.temp }}/volna-clips"
       - name: The agent starts
         run: dotnet run -c Release --project src/Volna.Agent/Volna.Agent.csproj -- --help
       - name: First-run tool install works here

@@ -4,6 +4,8 @@ using System.Text;
 
 namespace Volna.Core;
 
+public sealed record DownloadPartRequest(double Start, double End, string? Name = null);
+
 /// <summary>
 /// The queue: what is looked up, what downloads when, and what a card shows. It has no user interface in it.
 /// Everything here runs on one thread (the synchronization context it is created on); background work comes back to
@@ -917,6 +919,7 @@ public sealed class QueueController : IDisposable
             Original = item.IsOriginal,
             CutOfftopic = item.AudioMode && prefs.OriginalTracks && !item.IsOriginal && IsYouTube(item) && item.Section == null,
             Section = item.Section,
+            SectionName = item.SectionName,
             Overwrite = item.ForceDownload,
             CleanNames = prefs.CleanNames,
             Proxy = ValidateProxy(prefs.Proxy),
@@ -1595,13 +1598,13 @@ public sealed class QueueController : IDisposable
         unchecked
         {
             foreach (var item in Items)
-                signature = signature * 31 + (int)item.State * 7 + (item.AudioMode ? 1 : 0) + (item.ManualPick ? 2 : 0) + (item.Section == null ? 0 : 4) + (item.VideoId == null ? 0 : item.VideoId.GetHashCode(StringComparison.Ordinal));
+                signature = signature * 31 + (int)item.State * 7 + (item.AudioMode ? 1 : 0) + (item.ManualPick ? 2 : 0) + (item.Section?.GetHashCode(StringComparison.Ordinal) ?? 0) + (item.SectionName?.GetHashCode(StringComparison.Ordinal) ?? 0) + (item.VideoId == null ? 0 : item.VideoId.GetHashCode(StringComparison.Ordinal));
         }
         if (!now && signature == queueSignature) return;
         queueSignature = signature;
         var list = Items.Where(i => i.State != ItemState.Done && !i.Removed).Select(i => Json.Map(
             ("source", i.SourceUrl), ("query", i.Query), ("audio", i.AudioMode), ("locked", i.ModeLocked), ("manual", i.ManualPick), ("trackChecked", i.TrackChecked),
-            ("expected", i.ExpectedSeconds), ("pending", i.PendingOutput), ("review", i.ReviewReason), ("follow", i.FollowRefresh), ("height", i.HeightOverride), ("isrc", i.Isrc), ("lists", i.Lists.Count > 0 ? i.Lists.ToList() : null), ("section", i.Section), ("reviewOk", i.ReviewDismissed),
+            ("expected", i.ExpectedSeconds), ("pending", i.PendingOutput), ("review", i.ReviewReason), ("follow", i.FollowRefresh), ("height", i.HeightOverride), ("isrc", i.Isrc), ("lists", i.Lists.Count > 0 ? i.Lists.ToList() : null), ("section", i.Section), ("sectionName", i.SectionName), ("reviewOk", i.ReviewDismissed),
             ("playlist", i.Playlist), ("clipPlaylist", i.ClipPlaylist), ("info", i.Fetched && i.Info != null ? Slim(i.Info) : null),
             // Both versions a card can show, so switching between them still works after a restart.
             ("clip", i.ClipInfo != null ? Slim(i.ClipInfo) : null), ("track", i.TrackInfo != null ? Slim(i.TrackInfo) : null))).ToList();
@@ -1647,6 +1650,7 @@ public sealed class QueueController : IDisposable
             item.HeightOverride = entry.Num("height") is { } height ? (int)height : null;
             item.Isrc = entry.Str("isrc");
             item.Section = entry.Str("section");
+            item.SectionName = Engine.CleanSectionName(entry.Str("sectionName"));
             item.ReviewDismissed = entry.Flag("reviewOk");
             if (entry.Raw("lists") is List<object?> lists) item.Lists.AddRange(lists.OfType<string>());
             if (entry.Raw("info") is Dictionary<string, object?> info)
@@ -1687,7 +1691,7 @@ public sealed class QueueController : IDisposable
     public bool SetSection(QueueItem item, string? from, string? to)
     {
         if (!item.CanEdit) return false;
-        if (string.IsNullOrWhiteSpace(from) && string.IsNullOrWhiteSpace(to)) item.Section = null;
+        if (string.IsNullOrWhiteSpace(from) && string.IsNullOrWhiteSpace(to)) { item.Section = null; item.SectionName = null; }
         else
         {
             double start = string.IsNullOrWhiteSpace(from) ? 0 : Engine.ParseTime(from) ?? -1;
@@ -1703,6 +1707,7 @@ public sealed class QueueController : IDisposable
     /// <summary>The section for a part, in whole seconds; null when the part is the whole video.</summary>
     public static string? SectionFor(double start, double end, double? duration)
     {
+        if (!double.IsFinite(start) || !double.IsFinite(end) || start >= long.MaxValue || end >= long.MaxValue || duration is { } d && (!double.IsFinite(d) || d >= long.MaxValue)) return null;
         long from = (long)Math.Floor(Math.Max(0, start)), to = (long)Math.Ceiling(end);
         if (duration is > 0) to = Math.Min(to, (long)Math.Ceiling(duration.Value));
         if (to - from < 1) return null;
@@ -1714,38 +1719,70 @@ public sealed class QueueController : IDisposable
     /// Downloads only this part of the video, in seconds, and starts at once. A card that is finished or busy keeps its
     /// file, and the part gets a card of its own under it; so does any further part of the same video.
     /// </summary>
-    public QueueItem? DownloadPart(QueueItem item, double start, double end)
+    public QueueItem? DownloadPart(QueueItem item, double start, double end, string? name = null)
     {
-        if (!item.Fetched || item.Info == null || end - start < 1) return null;
-        string? section = SectionFor(start, end, item.Info.Num("duration"));
-        QueueItem target = item;
-        if (!item.CanEdit)
+        var cards = DownloadParts(item, new[] { new DownloadPartRequest(start, end, name) });
+        return cards.Count > 0 ? cards[0] : null;
+    }
+
+    /// <summary>
+    /// Validates the entire list before changing the queue, then starts its distinct ranges in order.
+    /// Empty means that no range was accepted. Repeated ranges share one download, even if named differently.
+    /// </summary>
+    public IReadOnlyList<QueueItem> DownloadParts(QueueItem item, IReadOnlyList<DownloadPartRequest> parts)
+    {
+        if (!item.Fetched || item.Info == null || item.Removed || parts.Count == 0 || item.Info.Str("live_status") == "is_live") return Array.Empty<QueueItem>();
+        double? duration = item.Info.Num("duration");
+        if (duration is { } length && (!double.IsFinite(length) || length <= 0 || length >= long.MaxValue)) return Array.Empty<QueueItem>();
+        var ranges = new List<(string? Section, string? Name)>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var part in parts)
         {
-            target = new QueueItem
-            {
-                Number = nextNumber++,
-                SourceUrl = item.WebpageUrl ?? item.SourceUrl,
-                AudioMode = item.AudioMode,
-                ModeLocked = true,
-                HeightOverride = item.HeightOverride,
-                ThumbBytes = item.ThumbBytes,
-                Fetched = true,
-                TrackChecked = true,
-                State = ItemState.Ready,
-                StatusText = Loc.T("status.ready"),
-            };
-            ApplyInfo(target, item.Info, item.Playlist.Length > 0 ? item.Playlist : null);
-            target.ClipInfo = item.ClipInfo;
-            target.TrackInfo = item.TrackInfo;
-            int index = Items.IndexOf(item);
-            Items.Insert(index < 0 ? Items.Count : index + 1, target);
+            if (part == null || !double.IsFinite(part.Start) || !double.IsFinite(part.End) || part.Start < 0 || part.End >= long.MaxValue
+                || part.End - part.Start < 1 || duration is { } total && Math.Min(part.End, total) - part.Start < 1) return Array.Empty<QueueItem>();
+            string? section = SectionFor(part.Start, part.End, duration);
+            if (seen.Add(section ?? "")) ranges.Add((section, Engine.CleanSectionName(part.Name)));
         }
-        target.Section = section;
-        target.ForceDownload = false;
-        RefreshLabels(new[] { target });
-        target.Changed();
-        StartOne(target);
-        return target;
+        if (!ValidateForStart()) return Array.Empty<QueueItem>();
+
+        var targets = new List<QueueItem>();
+        int index = Items.IndexOf(item);
+        int insertAt = index < 0 ? Items.Count : index + 1;
+        foreach (var range in ranges)
+        {
+            QueueItem target = item;
+            if (targets.Count > 0 || !item.CanEdit)
+            {
+                target = new QueueItem
+                {
+                    Number = nextNumber++,
+                    SourceUrl = item.WebpageUrl ?? item.SourceUrl,
+                    AudioMode = item.AudioMode,
+                    ModeLocked = true,
+                    HeightOverride = item.HeightOverride,
+                    ThumbBytes = item.ThumbBytes,
+                    Fetched = true,
+                    TrackChecked = true,
+                    State = ItemState.Ready,
+                    StatusText = Loc.T("status.ready"),
+                };
+                ApplyInfo(target, item.Info, item.Playlist.Length > 0 ? item.Playlist : null);
+                target.ClipInfo = item.ClipInfo;
+                target.TrackInfo = item.TrackInfo;
+                target.ClipPlaylist = item.ClipPlaylist;
+                Items.Insert(insertAt++, target);
+            }
+            target.Section = range.Section;
+            target.SectionName = range.Name;
+            target.ForceDownload = false;
+            target.RepairTried = false;
+            targets.Add(target);
+        }
+        RefreshLabels(targets);
+        foreach (var target in targets)
+            if (!MarkIfExists(target)) Enqueue(target);
+        Pump();
+        return targets;
     }
 
     // ---------- Followed playlists ----------

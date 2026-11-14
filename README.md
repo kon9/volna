@@ -44,6 +44,8 @@ The app is not yet signed with a paid certificate, so the first start shows a wa
 
 Linux needs a graphical desktop with fontconfig, and `xz` to unpack FFmpeg during setup; almost every desktop distribution has them.
 
+Video previews use LibVLC, included in the Windows and macOS packages. On Windows, the player is embedded in `Volna.exe` and extracted automatically on first run, so previews work even when launching the executable directly from a ZIP. On Linux, install your distribution's VLC runtime (on Debian/Ubuntu: `sudo apt install libvlc5 vlc-plugin-base vlc-plugin-video-output`). Downloads and frame previews work without it. A playable preview fetches only the selected part, choosing a lower resolution when available, up to its first two minutes; its temporary file is removed when the preview is closed.
+
 ## How to use it
 
 1. **Add** links or song names. Paste with <kbd>Ctrl</kbd>+<kbd>V</kbd> anywhere, press <kbd>Enter</kbd> in the box, drop in a link or a `.txt` list, or simply copy a video link in your browser while *Catch copied links* is on.
@@ -68,6 +70,23 @@ A zip or a whole folder works too. The ISRC and length in the file help to find 
 ### Also useful
 
 A card's format chip chooses audio or a video quality for that card alone. Its **Part** chip picks a stretch of the video on a strip of its frames, and downloads only that; a link with `t=` in it starts there. Its **⋯** menu has **Follow this playlist**: a followed playlist is checked once a day and its new videos download by themselves. <kbd>Ctrl</kbd>+click, <kbd>Shift</kbd>+click or <kbd>Ctrl</kbd>+<kbd>A</kbd> selects several cards, and an action on one then applies to all of them. **Lyrics** in the audio options saves a text file next to each song; the song's name goes to [LRCLIB](https://lrclib.net/) to find it. **Settings** has the rest, such as clean file names without the video's id.
+
+### Choosing several parts
+
+Open a card's **Part** chip. The existing timeline and start/end fields still choose a single range.
+Give it an optional name and press **Add to list**; repeat for other moments, then **Download all parts**.
+Each range becomes its own queued download and file. The list stays available if you close and reopen
+the dialog during the same session.
+
+- **Chapters** lists the video's chapters when available. Click one to select its range, or check several
+  and add them to the list.
+- **Words** loads the video's available captions. Choose a language and search for a phrase; clicking a
+  passage selects its time range, which you can adjust before adding or downloading. Captions can be
+  unavailable, and automatic captions can contain mistakes.
+- **Preview with sound** prepares only the selected range, at a lower resolution when available, and plays it inside Volna.
+  Long selections preview their first two minutes. Pause, continue, mute or stop without adding a
+  download to the queue. Changing the range or closing the dialog stops playback and removes the
+  temporary preview.
 
 ### Signing in
 

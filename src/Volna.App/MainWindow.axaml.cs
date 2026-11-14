@@ -304,6 +304,7 @@ public partial class MainWindow : Window
         e.Handled = true;
         try
         {
+            if (HandleClipWorkspaceCommand(command, element!.DataContext)) return;
             if (command == "unfollow" && element!.DataContext is FollowedList followed) Queue.Unfollow(followed);
             else if (command == "modeMenu") element!.ContextMenu?.Open(element);
             // The same menu a right-click opens, which many people never find.
@@ -1218,6 +1219,8 @@ public partial class MainWindow : Window
             return;
         }
         pickerRunner?.Cancel();
+        CloseClip();
+        clipPlayer?.Dispose();
         clipRunner?.Cancel();
         signInCancel?.Cancel();
         setupCancel?.Cancel();
