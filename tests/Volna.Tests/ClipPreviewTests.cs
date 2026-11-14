@@ -37,4 +37,40 @@ public class ClipPreviewTests
     [Fact]
     public void Local_files_cannot_be_passed_as_remote_preview_sources() =>
         Assert.Throws<ArgumentException>(() => ClipPreview.Arguments("file:///private.txt", 0, 10, "preview-cache", "", Array.Empty<string>()));
+
+    [Fact]
+    public void A_failed_preview_keeps_the_media_server_cause_before_the_tool_summary()
+    {
+        var diagnostics = new ClipPreview.DownloadDiagnostics();
+        diagnostics.Add("[https @ 1234] HTTP error 403 Forbidden");
+        diagnostics.Add("Error opening input: Server returned 403 Forbidden (access denied)");
+        diagnostics.Add("ERROR: ffmpeg exited with code 1");
+
+        string message = diagnostics.FailureMessage(1);
+        Assert.Contains("HTTP error 403 Forbidden", message);
+        Assert.Contains("ERROR: ffmpeg exited with code 1", message);
+        Assert.Contains("exit code 1", message);
+    }
+
+    [Fact]
+    public void Preview_failure_diagnostics_keep_recent_output_and_have_a_size_limit()
+    {
+        var diagnostics = new ClipPreview.DownloadDiagnostics();
+        diagnostics.Add("Old progress that is no longer useful");
+        for (int i = 0; i < 20; i++) diagnostics.Add(new string('x', 10_000));
+        diagnostics.Add("ERROR: Connection timed out");
+
+        string message = diagnostics.FailureMessage(2);
+        Assert.DoesNotContain("Old progress", message);
+        Assert.Contains("ERROR: Connection timed out", message);
+        Assert.True(message.Length < 3200);
+    }
+
+    [Fact]
+    public void A_silent_preview_failure_still_reports_the_process_exit_code()
+    {
+        var diagnostics = new ClipPreview.DownloadDiagnostics();
+        diagnostics.Add("  ");
+        Assert.Equal("The preview could not be downloaded (exit code 7).", diagnostics.FailureMessage(7));
+    }
 }

@@ -35,9 +35,6 @@ public partial class MainWindow
         ClipPreviewFile? prepared = null;
         try
         {
-            prepared = await Volna.Core.ClipPreview.PrepareAsync(url, start, end, prefs.Proxy, runner,
-                line => Dispatcher.UIThread.Post(() => Log(line)));
-            if (generation != clipGeneration || playbackGeneration != clipPlaybackGeneration) return;
             if (clipPlayer == null)
             {
                 clipPlayer = new ClipVideoPlayer();
@@ -45,9 +42,15 @@ public partial class MainWindow
                 clipPlayer.Finished += StopClipPlayback;
                 clipPlayer.Failed += () => { StopClipPlayback(); ClipPlaybackStatus.Text = Loc.T("clip.preview.failed"); };
             }
+            // Check the local player first: a missing runtime must not waste a network download.
+            clipPlayer.PreparePlayback();
+            prepared = await Volna.Core.ClipPreview.PrepareAsync(url, start, end, prefs.Proxy, runner,
+                line => Dispatcher.UIThread.Post(() => Log(line)));
+            if (generation != clipGeneration || playbackGeneration != clipPlaybackGeneration) return;
             ClipPlaybackHost.IsVisible = true;
             ClipTitleOverlay.IsVisible = ClipTimeOverlay.IsVisible = false;
-            clipPlayer.PlayFile(prepared.Path);
+            await clipPlayer.PlayFileAsync(prepared.Path);
+            if (generation != clipGeneration || playbackGeneration != clipPlaybackGeneration) return;
             clipPlayer.Volume = clipPlaybackMuted ? 0 : 100;
             clipPreviewFile = prepared;
             prepared = null;
@@ -67,9 +70,15 @@ public partial class MainWindow
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
             if (generation != clipGeneration || playbackGeneration != clipPlaybackGeneration) return;
-            Log("Clip playback: " + ex.Message);
+            Log("Clip playback: " + ex);
             StopClipPlayback();
-            ClipPlaybackStatus.Text = Loc.T(OperatingSystem.IsLinux() && ex is ClipPlaybackUnavailableException ? "clip.preview.runtime" : "clip.preview.failed");
+            ClipPlaybackStatus.Text = Loc.T(ex switch
+            {
+                ClipPlaybackUnavailableException { MissingBundledRuntime: true } => "clip.preview.package",
+                ClipPlaybackUnavailableException when OperatingSystem.IsLinux() => "clip.preview.runtime",
+                ClipPlaybackUnavailableException => "clip.preview.player_failed",
+                _ => "clip.preview.failed"
+            });
         }
         finally
         {

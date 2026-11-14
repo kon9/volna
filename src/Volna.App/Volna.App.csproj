@@ -24,8 +24,12 @@
     <PackageReference Include="VideoLAN.LibVLC.Mac" Version="3.1.3.2" Condition="('$(RuntimeIdentifier)' == '' And $([MSBuild]::IsOSPlatform('OSX'))) Or $([System.String]::Copy('$(RuntimeIdentifier)').StartsWith('osx-'))" />
     <ProjectReference Include="..\Volna.Core\Volna.Core.csproj" />
   </ItemGroup>
-  <!-- VLC discovers plugins by directory. Keep its runtime beside the executable even in single-file builds. -->
-  <Target Name="KeepVlcRuntimeOutsideBundle" BeforeTargets="_ComputeFilesToBundle">
+  <!-- Windows native libraries and plugin DLLs are extracted from the single-file bundle on first run. -->
+  <PropertyGroup Condition="'$(PublishSingleFile)' == 'true' And $([System.String]::Copy('$(RuntimeIdentifier)').StartsWith('win-'))">
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+  </PropertyGroup>
+  <!-- macOS keeps the signed VLC runtime inside the app bundle; Linux uses the system runtime. -->
+  <Target Name="KeepVlcRuntimeOutsideBundle" BeforeTargets="_ComputeFilesToBundle" Condition="!$([System.String]::Copy('$(RuntimeIdentifier)').StartsWith('win-'))">
     <ItemGroup>
       <ResolvedFileToPublish Update="@(ResolvedFileToPublish)" Condition="$([System.String]::Copy('%(ResolvedFileToPublish.RelativePath)').StartsWith('libvlc'))">
         <ExcludeFromSingleFile>true</ExcludeFromSingleFile>

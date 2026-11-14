@@ -44,7 +44,7 @@ The app is not yet signed with a paid certificate, so the first start shows a wa
 
 Linux needs a graphical desktop with fontconfig, and `xz` to unpack FFmpeg during setup; almost every desktop distribution has them.
 
-Video previews use LibVLC, included in the Windows and macOS packages. On Linux, install your distribution's VLC runtime (on Debian/Ubuntu: `sudo apt install libvlc5 vlc-plugin-base vlc-plugin-video-output`). Downloads and frame previews work without it. A playable preview fetches only the selected part, choosing a lower resolution when available, up to its first two minutes; its temporary file is removed when the preview is closed.
+Video previews use LibVLC, included in the Windows and macOS packages. On Windows, the player is embedded in `Volna.exe` and extracted automatically on first run, so previews work even when launching the executable directly from a ZIP. On Linux, install your distribution's VLC runtime (on Debian/Ubuntu: `sudo apt install libvlc5 vlc-plugin-base vlc-plugin-video-output`). Downloads and frame previews work without it. A playable preview fetches only the selected part, choosing a lower resolution when available, up to its first two minutes; its temporary file is removed when the preview is closed.
 
 ## How to use it
 

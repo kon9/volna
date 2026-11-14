@@ -25,7 +25,7 @@ cp -R packaging/licenses "$STAGE/licenses"
 case "$RID" in
   win-*)
     cp "$OUT/app/Volna.exe" "$OUT/agent/volna-agent.exe" "$STAGE/"
-    cp -R "$OUT/app/libvlc" "$STAGE/"
+    # VLC and its plugins are embedded and extracted automatically; the executable works on its own.
     # Windows tar decides the format by the extension, but the tar of Git Bash would write a tar under this name.
     (cd "$OUT" && powershell.exe -NoProfile -Command "Compress-Archive -Force -Path '$NAME' -DestinationPath '../../$NAME.zip'")
     ;;

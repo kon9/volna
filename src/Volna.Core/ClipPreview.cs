@@ -52,6 +52,7 @@ public static class ClipPreview
         string folder = System.IO.Path.Combine(AppPaths.Cache, "clip-previews", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(folder);
         string? file = null;
+        var diagnostics = new DownloadDiagnostics();
         var lease = Auth.Lease();
         RunResult? result = null;
         bool keep = false;
@@ -60,11 +61,16 @@ public static class ClipPreview
             result = await runner.RunAsync(ToolManager.YtDlp, Arguments(url, start, boundedEnd, folder, proxy, lease.Args), line =>
             {
                 if (line.StartsWith("__PREVIEW__", StringComparison.Ordinal)) file = line[11..];
-                else log?.Invoke(line);
+                else
+                {
+                    diagnostics.Add(line);
+                    log?.Invoke(line);
+                }
             }).ConfigureAwait(false);
             if (result.Cancelled) throw new OperationCanceledException();
-            if (result.ExitCode != 0 || file == null || !File.Exists(file))
-                throw new IOException("The preview could not be downloaded.");
+            if (result.ExitCode != 0) throw new IOException(diagnostics.FailureMessage(result.ExitCode));
+            if (file == null || !File.Exists(file))
+                throw new IOException("The preview downloader did not create a video file.");
             // Only accept the file in our fresh directory, even if a tool printed a surprising path.
             if (!System.IO.Path.GetFullPath(file).StartsWith(System.IO.Path.GetFullPath(folder) + System.IO.Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
                 throw new IOException("The preview returned an unexpected file path.");
@@ -79,6 +85,31 @@ public static class ClipPreview
                 try { Directory.Delete(folder, true); }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
             }
+        }
+    }
+
+    /// <summary>Keep the cause before yt-dlp's final "ffmpeg exited" line, without retaining an unlimited tool log.</summary>
+    internal sealed class DownloadDiagnostics
+    {
+        readonly Queue<string> lines = new();
+
+        public void Add(string line)
+        {
+            line = line.Trim();
+            if (line.Length == 0) return;
+            if (line.Length > 500) line = line[..500] + "…";
+            lock (lines)
+            {
+                if (lines.Count == 6) lines.Dequeue();
+                lines.Enqueue(line);
+            }
+        }
+
+        public string FailureMessage(int exitCode)
+        {
+            string message = $"The preview could not be downloaded (exit code {exitCode}).";
+            lock (lines)
+                return lines.Count == 0 ? message : message + Environment.NewLine + string.Join(Environment.NewLine, lines);
         }
     }
 }
