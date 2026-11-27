@@ -3,6 +3,6 @@
     <OutputType>Exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Svg.Skia" Version="5.2.3" />
+    <PackageReference Include="Svg.Skia" Version="5.2.4" />
   </ItemGroup>
 </Project>
