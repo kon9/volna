@@ -4,8 +4,8 @@
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Avalonia.Headless" Version="12.1.5" />
-    <PackageReference Include="Avalonia.Skia" Version="12.1.5" />
+    <PackageReference Include="Avalonia.Headless" Version="12.2.0" />
+    <PackageReference Include="Avalonia.Skia" Version="12.2.0" />
     <ProjectReference Include="..\..\src\Volna.App\Volna.App.csproj" />
   </ItemGroup>
 </Project>
